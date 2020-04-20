@@ -45,7 +45,7 @@ localhost or your appspot.com subdomain).
 Note that this application does not work inside a frame, so it must be
 configured to launch as a new window in the SMART on FHIR integration point.
 
-# Runing locally
+# Running locally
 
 You will need a recent version of Node.  Once installed, you can run `npm
 install` to install the other required dependencies.
