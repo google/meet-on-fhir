@@ -47,7 +47,11 @@ configured to launch as a new window in the SMART on FHIR integration point.
 
 # Runing locally
 
-Configure Google Application Default credentials and run `npm start`.
+You will need a recent version of Node.  Once installed, you can run `npm
+install` to install the other required dependencies.
+
+Once everything is installed, configure Google Application Default credentials
+with access to a Cloud Datastore in a project you own and run `npm start`.
 
 # Deploying on Google Cloud
 
