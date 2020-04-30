@@ -16,43 +16,69 @@
 
 <html>
   <head>
+    <link type="text/css" rel="stylesheet" href="//fonts.googleapis.com/css?family=Open+Sans:400,300,600,700&display=swap">
     <script src="/fhirclient/fhir-client.min.js"></script>
     <script src="/jquery/jquery.min.js"></script>
+    <script src="language-assets.js"></script>
+    <link rel="stylesheet" href="assets/styles.css">
     <script>
       $(function() {
+        setLanguage('en');
         FHIR.oauth2.ready()
-          .then(client => handle(client.user, client.encounter))
+          .then((client) => 
+          {
+            $("#language-selector").on("change", () => { 
+              setLanguage($('#language-selector').val());
+            });   
+            if (!client.encounter || !client.encounter.id) { 
+              showError('#error-no-encounter');
+            } else {
+              var userResourceType;
+
+              // Older FHIR server that doesn't support id_token and therefore the fhirUser property.
+              if (!client.user || !client.user.resourceType) {
+                if (client.state.tokenResponse.fallback_user) {
+                  userResourceType = client.state.tokenResponse.fallback_user.split('/')[0].toLowerCase()
+                }
+              } else {
+                userResourceType = client.user.resourceType.toLowerCase();
+              }
+
+              if (userResourceType) {
+                // Patient needs to see the consent screen, provider bypasses it.
+                if (userResourceType === 'patient') {
+                  $("#consent-ack").on("click", () => { 
+                    showWaitingRoom();
+                    waitFor(client.encounter.id);
+                    return;
+                  });
+                } else {
+                  showWaitingRoom();
+                  create(client.encounter.id);
+                }
+              } else {
+                showError('#error-fihr-serve');
+              }              
+            }            
+          })
           .catch(error => {
             console.log(error)
-            $('#error-smart-failed').show();
+            showError('#error-smart-failed');
           });
       });
 
-      function handle(user, encounter) {
-        if (!encounter.id) {
-          $('#error-no-encounter').show();
-          return;
-        }
-        if (user.resourceType.toLowerCase() == 'patient') {
-          $('#message-please-wait').show();
-          waitFor(encounter.id);
-          return;
-        }
-
-        create(encounter.id);
-      }
-
       function waitFor(encounterId) {
-        window.setInterval(function() {
+        var timerId = window.setInterval(function() {
           $.get('/hangouts/' + encounterId, (data, status) => {
                 if (data['url']) {
+                  window.clearInterval(timerId);
                   window.location.replace(data['url']);
                   return;
                 }
               }, 'json').fail(function(xhr, text, err) {
                 console.log(text);
                 console.log(err);
-                $('#error-unexpected').show();
+                showError('#error-unexpected');
               });
         }, 5000);
       }
@@ -63,26 +89,71 @@
             window.location.replace(data['url']);
           }
         }).fail(function() {
-          $('#error-unexpected').show();
+          showError('#error-unexpected');
         });
       }
-    </script>
-    <style>
-      .hidden { display: none; }
-      div {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
+
+      function showError(errorSelector) {
+        showWaitingRoom();
+        $(errorSelector).show();
+        $('#message-please-wait').hide();
+        $('#icon-please-wait').hide();
+        $('#icon-exclamation').show();
       }
-    </style>
+
+      function showWaitingRoom() {
+        $('#consent-ui').hide();
+        $('#waiting-room-ui').show();
+      }
+
+      function setLanguage(languageId) {
+        var languageAssets = getAssetsForLanguage(languageId);
+
+        $('#consent-message').html(languageAssets.consentMessage);
+        $('#consent-ack').text(languageAssets.continueButton);
+        $('#message-please-wait').html(languageAssets.waitingRoomMessage);
+        $('#language-label').html(languageAssets.languageSelect);
+        $('#welcome-message').html(languageAssets.welcomeMessage);
+      }
+    </script>
   </head>
   <body>
-    <div>
-      <p class="hidden" id="error-no-encounter">No encounter was selected</p>
-      <p class="hidden" id="error-unexpected">An unexpected error occurred in the application</p>
-      <p class="hidden" id="error-smart-failed">An error occurred while communicating with the EHR system</p>
-      <p class="hidden" id="message-please-wait">Please wait for the meeting to start...</p>
-    </div>
+    <div class="vertical-center">
+      <div class="middle">
+        <img src="assets/logo.png" class="logo">
+      </div>
+      <div class="middle">
+        <div id="consent-ui" class="top-down consent">
+          <div class="middle">
+          <div id="language-label" class="language-label"></div>
+          <select id="language-selector" class="language-selector">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
+          <div id="consent-message" class="consent">
+          </div>
+          <div class="middle">
+            <button id="consent-ack"></button> 
+          </div>       
+        </div>
+        <div id="waiting-room-ui" class="top-down hidden">
+          <div class="middle">
+            <img src="assets/loading.gif" class="loading-image" id="icon-please-wait" >
+            <img src="assets/failed.gif" class="loading-image hidden" id="icon-exclamation" >
+          </div>
+          <div class="middle">
+            <div class="welcome-message" id="welcome-message"></div>
+          </div>
+          <div class="middle">
+            <p class="hidden patient-message-error" id="error-no-encounter">No encounter was selected</p>
+            <p class="hidden patient-message-error" id="error-fihr-serve">FHIR Server too old or misconfigured</p>
+            <p class="hidden patient-message-error" id="error-unexpected">An unexpected error occurred in the application</p>
+            <p class="hidden patient-message-error" id="error-smart-failed">An error occurred while communicating with the EHR system</p>
+            <p class="patient-message" id="message-please-wait"></p>
+          </div>
+        </div>
+      </div>
+    </div>  
   </body>
 </html>
