@@ -1,0 +1,166 @@
+* {
+  font-family: 'Open Sans';
+}
+
+.vertical-spacing {
+  flex-direction: column;
+  display: flex;
+  justify-content: space-around;
+  height: 100%;
+}
+
+.vertical-center {
+  flex-direction: column;
+  display: flex;
+  justify-content: center;
+  height: 100%;
+}
+
+.middle {
+  display: flex;
+  align-items: middle;
+  justify-content: center;
+}
+
+.middle-top {
+  display: flex;
+  align-items: top;
+  justify-content: center;
+}
+
+.top-down {
+  flex-direction: row;
+  align-items: middle;
+  justify-content: center;
+}
+
+.hidden { display: none; }
+
+.logo {
+  width: 280px;
+  height: 40px;
+  margin-bottom: 40px;
+}
+
+.loading-image {
+  width: 64px;
+  height: 52px;
+  margin-bottom: 40px;
+}
+
+.group-image {
+  width: 331px;
+  height: 219px;
+  margin-top: 40px;
+}
+
+.welcome-message {
+  font-size: 24px;
+  font-weight: bold;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: normal;
+  text-align: center;
+  color: #000000;
+  margin-left: 10px;
+  margin-right: 10px
+}
+
+.patient-message {
+  width: 600px;
+  height: 60px;
+  font-size: 24px;
+  font-weight: normal;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.25;
+  letter-spacing: normal;
+  text-align: center;
+  color: #000000;
+}
+
+.patient-message-error {
+  width: 600px;
+  height: 60px;
+  font-size: 24px;
+  font-weight: normal;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.25;
+  letter-spacing: normal;
+  text-align: center;
+  color: #FF0037;
+}
+
+.consent {
+  width: 620px;
+}
+
+.language-label {
+  font-size: 18px;
+  font-weight: bold;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.25;
+  letter-spacing: normal;
+  text-align: center;
+  color: #000000;
+  margin-right: 10px;
+}
+
+.language-selector {
+  font-size: 18px;
+  font-weight: bold;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.25;
+  letter-spacing: normal;
+  text-align: center;
+  color: #000000;
+  margin-left: 10px;
+  width: 200px;
+}
+
+.consent h1 {
+  font-size: 18px;
+  font-weight: bold;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.25;
+  letter-spacing: normal;
+  text-align: center;
+  color: #000000;
+  margin-top: 40px;
+}
+
+.consent li {
+  font-size: 12px;
+  font-weight: normal;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: 1.50;
+  letter-spacing: normal;
+  text-align: left;
+  color: #000000;
+}
+
+.consent button {
+  width: 301px;
+  height: 50px;
+  background-color: #1A4D8F;
+  text-transform: uppercase;
+  text-shadow: 1px 1px 0 #000000;
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: bold;
+  font-stretch: normal;
+  font-style: normal;
+  line-height: normal;
+  letter-spacing: normal;
+  text-align: center;
+  border-radius: 2px;
+  margin-top: 40px;
+  border-width: 0px;
+  cursor: pointer;
+}

@@ -6,5 +6,6 @@
     "clientSecret": "the client secret for the client ID",
     "redirectUri": "https://your-url/authenticate"
   },
-  "fhirClientId": "a SMART on FHIR client ID registered with the EHR"
+  "fhirClientId": "a SMART on FHIR client ID registered with the EHR",
+  "debugLogging": false
 }

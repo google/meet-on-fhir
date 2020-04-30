@@ -21,10 +21,9 @@
     <script src="/jquery/jquery.min.js"></script>
     <script>
       $.get('/settings', (data, status) => {
-        console.log(data);
         FHIR.oauth2.authorize({
           clientId: data.fhirClientId,
-          scope: "openid profile launch/patient launch/encounter"
+          scope: "openid fhirUser profile launch launch/patient launch/encounter"
         });
       });
     </script>

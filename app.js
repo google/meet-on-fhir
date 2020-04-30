@@ -41,10 +41,17 @@ function error(response) {
   };
 }
 
+function debugLog(message) {
+	if (settings.debugLogging) {
+		console.log(message);
+	}
+}
+
 app.get('/hangouts/:encounterId', (request, response) => {
 	const key = datastore.key(['Encounter', request.params.encounterId]);
 	datastore.get(key).then(entity => {
 		if (entity) {
+			debugLog('Patient encounter ' + request.params.encounterId + ' found URL ' + entity.Url);
 			response.send({url: entity.Url});
 		} else {
 			response.send({});
@@ -57,6 +64,7 @@ app.post('/hangouts', (request, response) => {
 	const key = datastore.key(['Encounter', encounterId]);
 	datastore.get(key).then(entity => {
 		if (entity) {
+			debugLog('Provider found existing encounter ' + request.body.encounterId + ' with URL ' + entity.Url);
 			response.send({url: entity.Url});
 			return;
 		}
@@ -64,9 +72,11 @@ app.post('/hangouts', (request, response) => {
 		user.withCredentials(request, response, client => {
 			calendar.createEvent(client, encounterId, (err, url) => {
 				if (err) {
+					debugLog('ERROR: Provider calendar event create for encounter ' + request.body.encounterId + ' failed with error ' + err);
 					response.status(500).send(err);
 					return;
 				}
+				debugLog('Provider created calendar event for encounter ' + request.body.encounterId + ' with URL ' + url);
 				const entity = { Url: url };
 				datastore.set(key, entity).then(() => {
 					response.send({url: url});
