@@ -37,6 +37,15 @@ Console](https://console.cloud.google.com/apis/credentials/consent).
 To provide these settings, create a file called `settings.json` using the
 instructions in `settings.json-example`.
 
+## Choosing the calendar for events
+
+The example settings file creates calendar events on the primary calendar.
+Instead, a custom name can be specified and the named calendar will be created
+(if it doesn't exist) and events will be added there.
+
+*Note that if you choose to use this feature you must invalidate all previous
+user sessions since the required OAuth2 scopes are broader.*
+
 ## SMART on FHIR configuration
 
 The launch URL should be set to `/launch.html` on the appropriate server (e.g.

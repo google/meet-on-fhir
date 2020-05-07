@@ -1,4 +1,5 @@
 {
+  "calendar": "primary",
   "sessionCookieSecret": "secret key used to encrypt the session cookie",
   "oauth2": {
     "clientId": "an oauth2 client ID registered with Google Cloud",

@@ -33,7 +33,10 @@ function getLoginUrl() {
   return newClient().generateAuthUrl({
     access_type: 'offline',
     prompt: 'select_account consent',
-    scope: ['https://www.googleapis.com/auth/calendar.events'],
+    scope: [
+      'https://www.googleapis.com/auth/calendar',
+      'https://www.googleapis.com/auth/calendar.events',
+    ]
   });
 }
 
