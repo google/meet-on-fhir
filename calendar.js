@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+const settings = require('./settings.json');
+
 const {google} = require('googleapis');
 
 exports.createEvent = function(client, encounterId, callback) {
@@ -38,15 +40,53 @@ exports.createEvent = function(client, encounterId, callback) {
 	};
 
 	const calendar = google.calendar({version: 'v3', auth: client});
-	calendar.events.insert({
-		calendarId: 'primary',
-		conferenceDataVersion: 1,
-		resource: event,
-	}, (err, result) => {
-    var link;
-    if (result && result.data && result.data.hangoutLink) {
-      link = result.data.hangoutLink;
+
+  withCalendarId(calendar, (err, id) => {
+    if (err) {
+      callback(err, null);
+      return;
     }
-		callback(err, link);
-	});
+
+    calendar.events.insert({
+      calendarId: id,
+      conferenceDataVersion: 1,
+      resource: event,
+    }, (err, result) => {
+      var link;
+      if (result && result.data && result.data.hangoutLink) {
+        link = result.data.hangoutLink;
+      }
+      callback(err, link);
+    });
+  });
 };
+
+function withCalendarId(calendar, callback) {
+  if (!settings.calendar || settings.calendar == 'primary') {
+    callback(null, 'primary');
+    return;
+  }
+
+  calendar.calendarList.list({ minAccessRole: 'owner' }, (err, result) => {
+    if (result && result.data) {
+      const items = result.data.items;
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].summary == settings.calendar) {
+          callback(err, items[i].id);
+          return;
+        }
+      }
+
+      calendar.calendars.insert({ requestBody: { summary: settings.calendar } }, (err, result) => {
+        var id;
+        if (result && result.data && result.data.id) {
+          id = result.data.id;
+        }
+        callback(err, id);
+      });
+      return;
+    }
+
+    callback(err, null);
+  })
+}
