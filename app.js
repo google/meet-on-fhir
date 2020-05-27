@@ -52,7 +52,7 @@ app.get('/hangouts/:encounterId', (request, response) => {
 	datastore.get(key).then(entity => {
 		if (entity) {
 			debugLog('Patient encounter ' + request.params.encounterId + ' found URL ' + entity.Url);
-			response.send({url: entity.Url});
+			response.send({url: "/redirect?url=" + entity.Url});
 		} else {
 			response.send({});
 		}
@@ -65,7 +65,7 @@ app.post('/hangouts', (request, response) => {
 	datastore.get(key).then(entity => {
 		if (entity) {
 			debugLog('Provider found existing encounter ' + request.body.encounterId + ' with URL ' + entity.Url);
-			response.send({url: entity.Url});
+			response.send({url: "/redirect?url=" + entity.Url});
 			return;
 		}
 
@@ -79,7 +79,7 @@ app.post('/hangouts', (request, response) => {
 				debugLog('Provider created calendar event for encounter ' + request.body.encounterId + ' with URL ' + url);
 				const entity = { Url: url };
 				datastore.set(key, entity).then(() => {
-					response.send({url: url});
+					response.send({url: "/redirect?url=" + url});
 				});
 			});
 		});
@@ -96,6 +96,10 @@ app.get('/logout', (request, response) => {
 
 app.get('/settings', (request, response) => {
   response.send({'fhirClientId': settings.fhirClientId});
+});
+
+app.get('/redirect', (request, response) => {
+  response.redirect(request.query.url);
 });
 
 app.listen(process.env.PORT || 8080);
