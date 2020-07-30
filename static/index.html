@@ -25,12 +25,11 @@
       $(function() {
         setLanguage('en');
         FHIR.oauth2.ready()
-          .then((client) => 
-          {
-            $("#language-selector").on("change", () => { 
+          .then((client) => {
+            $("#language-selector").on("change", () => {
               setLanguage($('#language-selector').val());
-            });   
-            if (!client.encounter || !client.encounter.id) { 
+            });
+            if (!client.encounter || !client.encounter.id) {
               showError('#error-no-encounter');
             } else {
               var userResourceType;
@@ -47,7 +46,7 @@
               if (userResourceType) {
                 // Patient needs to see the consent screen, provider bypasses it.
                 if (userResourceType === 'patient') {
-                  $("#consent-ack").on("click", () => { 
+                  $("#consent-ack").on("click", () => {
                     showWaitingRoom();
                     waitFor(client.encounter.id);
                     return;
@@ -58,8 +57,8 @@
                 }
               } else {
                 showError('#error-fihr-serve');
-              }              
-            }            
+              }
+            }
           })
           .catch(error => {
             console.log(error)
@@ -72,8 +71,7 @@
           $.get('/hangouts/' + encounterId, (data, status) => {
                 if (data['url']) {
                   window.clearInterval(timerId);
-                  window.location.replace(data['url']);
-                  return;
+                  showJoinButton(data['url']);
                 }
               }, 'json').fail(function(xhr, text, err) {
                 console.log(text);
@@ -84,13 +82,27 @@
       }
 
       function create(encounterId) {
-        $.post('/hangouts', {encounterId: encounterId}, (data, status) => {
+        $.post('/hangouts', { encounterId: encounterId }, (data, status) => {
           if (data['url']) {
-            window.location.replace(data['url']);
+            const url = data['url'];
+            if (url.includes('meet.google.com')) {
+              showJoinButton(url);
+            } else {
+              window.location.replace(url);
+            }
           }
         }).fail(function() {
           showError('#error-unexpected');
         });
+      }
+
+      function showJoinButton(url) {
+        $('#message-please-wait').hide();
+        $('#icon-please-wait').hide();
+        $("#ready-to-join").on("click", () => {
+          window.location.replace(url);
+        });
+        $('#ready-to-join').show();
       }
 
       function showError(errorSelector) {
@@ -98,6 +110,7 @@
         $(errorSelector).show();
         $('#message-please-wait').hide();
         $('#icon-please-wait').hide();
+        $('#ready-to-join').hide();
         $('#icon-exclamation').show();
       }
 
@@ -114,6 +127,7 @@
         $('#message-please-wait').html(languageAssets.waitingRoomMessage);
         $('#language-label').html(languageAssets.languageSelect);
         $('#welcome-message').html(languageAssets.welcomeMessage);
+        $('#ready-to-join').text(languageAssets.joinButton);
       }
     </script>
   </head>
@@ -134,8 +148,8 @@
           <div id="consent-message" class="consent">
           </div>
           <div class="middle">
-            <button id="consent-ack"></button> 
-          </div>       
+            <button id="consent-ack"></button>
+          </div>
         </div>
         <div id="waiting-room-ui" class="top-down hidden">
           <div class="middle">
@@ -151,9 +165,10 @@
             <p class="hidden patient-message-error" id="error-unexpected">An unexpected error occurred in the application</p>
             <p class="hidden patient-message-error" id="error-smart-failed">An error occurred while communicating with the EHR system</p>
             <p class="patient-message" id="message-please-wait"></p>
+            <button id="ready-to-join" class="hidden"></button>
           </div>
         </div>
       </div>
-    </div>  
+    </div>
   </body>
 </html>

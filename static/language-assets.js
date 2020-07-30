@@ -2,6 +2,7 @@ var languageAssets = {
   // English
   en: {
     continueButton: "Continue",
+    joinButton: "Join appointment",
     welcomeMessage: "Welcome",
     waitingRoomMessage: "Your appointment will begin soon.<br />Thank you for your patience.",
     consentMessage: "<h1>Before you enter the waiting room, please review the following information about televisits, via MyChart:</h1>" +        
@@ -15,6 +16,7 @@ var languageAssets = {
   // Spanish
   es: {
     continueButton: "Seguir",
+    joinButton: "Unirse a la cita",
     welcomeMessage: "Bienvenidos",
     waitingRoomMessage: "Tu cita comenzará pronto.<br/>agradecemos tu paciencia.",
     consentMessage: "<h1>Antes de entrar a la sala de espera, revise la siguiente información sobre las televisitas, a través de MyCHArt:</h1>" +        
