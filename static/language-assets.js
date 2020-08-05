@@ -16,7 +16,7 @@ var languageAssets = {
   // Spanish
   es: {
     continueButton: "Seguir",
-    joinButton: "Unirse a la cita",
+    joinButton: "Iniciar su cita",
     welcomeMessage: "Bienvenidos",
     waitingRoomMessage: "Tu cita comenzará pronto.<br/>agradecemos tu paciencia.",
     consentMessage: "<h1>Antes de entrar a la sala de espera, revise la siguiente información sobre las televisitas, a través de MyCHArt:</h1>" +        

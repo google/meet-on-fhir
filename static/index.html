@@ -88,7 +88,7 @@
             if (url.includes('meet.google.com')) {
               showJoinButton(url);
             } else {
-              // url may point to a login page if users have not logged in.
+              // url may point to the authentication page if users have not logged in.
               window.location.replace(url);
             }
           }
