@@ -84,13 +84,7 @@
       function create(encounterId) {
         $.post('/hangouts', { encounterId: encounterId }, (data, status) => {
           if (data['url']) {
-            const url = data['url'];
-            if (url.includes('meet.google.com')) {
-              showJoinButton(url);
-            } else {
-              // url may point to the authentication page if users have not logged in.
-              window.location.replace(url);
-            }
+            window.location.replace(data['url']);
           }
         }).fail(function() {
           showError('#error-unexpected');
