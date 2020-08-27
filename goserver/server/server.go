@@ -20,8 +20,8 @@ func (s *Server) Run() error {
 	if s.AuthorizedFhirURL == "" {
 		return fmt.Errorf("AuthorizedFhirURL must be provided")
 	}
-	http.HandleFunc(launchPath, s.handleLaunch)
 
+	http.HandleFunc(launchPath, s.handleLaunch)
 	http.ListenAndServe(fmt.Sprintf(":%d", s.Port), http.DefaultServeMux)
 	return nil
 }
