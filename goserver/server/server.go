@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"net/http"
 
@@ -18,18 +17,21 @@ const (
 	stateKey    = "state"
 )
 
-var authorizedFhirURL = flag.String("authorized_fhir_url", "", "The FHIR base url that is authorized to launch the telehealth app. If not set, launch endpoint will always return HTTP 401.")
-
 // Server handles incoming HTTP requests.
 type Server struct {
-	Port int
+	AuthorizedFhirURL string
+	Port              int
 }
 
 // Run starts HTTP server
-func (s *Server) Run() {
-	http.HandleFunc(launchPath, s.handleLaunch)
+func (s *Server) Run() error {
+	if s.AuthorizedFhirURL == "" {
+		return fmt.Errorf("AuthorizedFhirURL must be provided")
+	}
 
+	http.HandleFunc(launchPath, s.handleLaunch)
 	http.ListenAndServe(fmt.Sprintf(":%d", s.Port), http.DefaultServeMux)
+	return nil
 }
 
 func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +40,7 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing iss in URL query parameters", http.StatusUnauthorized)
 		return
 	}
-	if fhirURL != *authorizedFhirURL {
+	if fhirURL != s.AuthorizedFhirURL {
 		http.Error(w, fmt.Sprintf("unauthorized iss %s", fhirURL), http.StatusUnauthorized)
 		return
 	}

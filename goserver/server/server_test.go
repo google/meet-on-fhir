@@ -22,7 +22,7 @@ func setupFHIRServer(authURL, tokenURL string) string {
 
 func TestLaunchHandlerInvalidParameters(t *testing.T) {
 	fhirURL := setupFHIRServer("https://auth.com", "https://token.com")
-	*authorizedFhirURL = fhirURL
+	s := &Server{AuthorizedFhirURL: fhirURL, Port: 8080}
 	tests := []struct {
 		name, queryParameters string
 		expectedHTTPStatus    int
@@ -61,7 +61,6 @@ func TestLaunchHandlerInvalidParameters(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			s := &Server{}
 			req, err := http.NewRequest("GET", "?"+test.queryParameters, nil)
 			if err != nil {
 				t.Fatal(err)
@@ -78,11 +77,10 @@ func TestLaunchHandlerInvalidParameters(t *testing.T) {
 
 func TestLaunchHandler(t *testing.T) {
 	fhirURL := setupFHIRServer("https://auth.com", "https://token.com")
-	*authorizedFhirURL = fhirURL
 	*smartonfhir.FHIRRedirectURL = "https://redirect.com"
 	*smartonfhir.FHIRClientID = "fhir_client"
 
-	s := &Server{}
+	s := &Server{AuthorizedFhirURL: fhirURL, Port: 8080}
 	req, err := http.NewRequest("GET", fmt.Sprintf("?launch=123&iss=%s", fhirURL), nil)
 	if err != nil {
 		t.Fatal(err)
