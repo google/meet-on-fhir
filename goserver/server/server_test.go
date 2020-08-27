@@ -13,7 +13,7 @@ func TestRunError(t *testing.T) {
 		expectedMessage         string
 	}{
 		{
-			name:            "no AuthorizedFHIRURL set, expecting error",
+			name:            "invalid authorized fhir url",
 			expectedMessage: "AuthorizedFHIRURL must be provided",
 		},
 	}
