@@ -6,10 +6,10 @@ import (
 	"github.com/google/meet-on-fhir/server"
 )
 
-var authorizedFhirEndpoint = flag.String("authorized_fhir_endpoint", "", "The FHIR endpoint that is authorized to laucnh the telehealth app")
+var httpServerPort = flag.Int("http_server_port", 8080, "The port to start the server on")
 
 func main() {
 	flag.Parse()
-	server := &server.Server{AuthorizedFHIREndPoint: *authorizedFhirEndpoint}
+	server := &server.Server{Port: *httpServerPort}
 	server.Run()
 }
