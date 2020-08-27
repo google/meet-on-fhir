@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -22,7 +23,7 @@ func setupFHIRServer(authURL, tokenURL string) string {
 
 func TestLaunchHandlerInvalidParameters(t *testing.T) {
 	fhirURL := setupFHIRServer("https://auth.com", "https://token.com")
-	s := &Server{AuthorizedFhirURL: fhirURL, Port: 8080}
+	s := &Server{AuthorizedFhirURL: fhirURL}
 	tests := []struct {
 		name, queryParameters string
 		expectedHTTPStatus    int
@@ -80,7 +81,7 @@ func TestLaunchHandler(t *testing.T) {
 	*smartonfhir.FHIRRedirectURL = "https://redirect.com"
 	*smartonfhir.FHIRClientID = "fhir_client"
 
-	s := &Server{AuthorizedFhirURL: fhirURL, Port: 8080}
+	s := &Server{AuthorizedFhirURL: fhirURL}
 	req, err := http.NewRequest("GET", fmt.Sprintf("?launch=123&iss=%s", fhirURL), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -128,5 +129,60 @@ func TestLaunchHandler(t *testing.T) {
 	}
 	if !strings.Contains(redirectURL, fmt.Sprintf("aud=%s", url.QueryEscape(fhirURL))) {
 		t.Errorf("redirect URL %s does not contain aud=%s", redirectURL, url.QueryEscape(fhirURL))
+	}
+}
+
+func TestHandleFHIRRedirectError(t *testing.T) {
+	s := &Server{AuthorizedFhirURL: "https://fhir.com"}
+	tests := []struct {
+		name, queryParameters string
+		existingSession       map[string]string
+		expectedHTTPStatus    int
+	}{
+		/*{
+			name:               "missing fhirURL in session",
+			queryParameters:    "",
+			expectedHTTPStatus: http.StatusUnauthorized,
+		},
+		{
+			name:               "missing launchID in session",
+			existingSession:    map[string]string{"fhirURL": "https://fhir.com"},
+			queryParameters:    "",
+			expectedHTTPStatus: http.StatusUnauthorized,
+		},*/
+		{
+			name:               "missing code in request",
+			existingSession:    map[string]string{"fhirURL": "https://fhir.com", "launchID": "123"},
+			queryParameters:    "",
+			expectedHTTPStatus: http.StatusUnauthorized,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			req, err := http.NewRequest("GET", "?"+test.queryParameters, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if test.existingSession != nil {
+				existingSess, err := session.Start(ctx, httptest.NewRecorder(), req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				for k, v := range test.existingSession {
+					existingSess.Set(k, v)
+				}
+				fmt.Printf("existing session %v", existingSess)
+
+			}
+
+			rr := httptest.NewRecorder()
+			s.handleFHIRRedirect(rr, req)
+			if status := rr.Code; status != test.expectedHTTPStatus {
+				t.Errorf("server.handleFHIRRedirect returned wrong status code: got %v want %v",
+					status, test.expectedHTTPStatus)
+			}
+		})
 	}
 }

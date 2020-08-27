@@ -80,6 +80,7 @@ func (s *Server) handleFHIRRedirect(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid session", http.StatusUnauthorized)
 		return
 	}
+	fmt.Printf("session from redirect %v", sess)
 
 	fhirURL := getSessionStringOrEmpty(sess, "fhirURL")
 	if fhirURL == "" {
