@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-session/session"
 	"github.com/google/meet-on-fhir/smartonfhir"
-	"golang.org/x/oauth2"
 )
 
 const (
@@ -50,20 +49,25 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authConfig, err := smartonfhir.GetSmartOAuth2Config(fhirURL)
+	sess, err := session.Start(context.Background(), w, r)
 	if err != nil {
-		fmt.Fprint(w, err)
+		http.Error(w, "cannot create session", http.StatusBadRequest)
 		return
 	}
 
-	sess, err := session.Start(context.Background(), w, r)
+	// use session ID as the state to prevent CSRF attacks
+	redirectURL, err := smartonfhir.GetFHIRAuthURL(fhirURL, launchID, sess.SessionID())
 	if err != nil {
-		fmt.Fprint(w, err)
+		http.Error(w, "cannot get FHIR authentication URL", http.StatusBadRequest)
 		return
 	}
+
 	sess.Set("fhirURL", fhirURL)
 	sess.Set("launchID", launchID)
-	redirectURL := authConfig.AuthCodeURL(sess.SessionID(), oauth2.SetAuthURLParam("aud", fhirURL))
+	if err := sess.Save(); err != nil {
+		http.Error(w, "cannot create session", http.StatusBadRequest)
+		return
+	}
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
@@ -71,39 +75,40 @@ func (s *Server) handleFHIRRedirect(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	sess, err := session.Start(ctx, w, r)
 	if err != nil {
-		fmt.Fprint(w, err)
+		http.Error(w, "invalid session", http.StatusUnauthorized)
 		return
 	}
 
 	fhirURL := getSessionStringOrEmpty(sess, "fhirURL")
 	if fhirURL == "" {
-		// error
+		http.Error(w, "invalid session: missing fhirURL", http.StatusUnauthorized)
+		return
 	}
 	launchID := getSessionStringOrEmpty(sess, "launchID")
 	if launchID == "" {
-		// error
+		http.Error(w, "invalid session: missing launchID", http.StatusUnauthorized)
+		return
 	}
 
 	code := getFirstParamOrEmpty(r, codeKey)
 	if code == "" {
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "missing code in URL query parameters", http.StatusBadRequest)
 		return
 	}
 
 	state := getFirstParamOrEmpty(r, stateKey)
 	if state == "" || state != sess.SessionID() {
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "missing or invalid state", http.StatusBadRequest)
 		return
 	}
 
-	authConfig, err := smartonfhir.GetSmartOAuth2Config(fhirURL)
+	token, err := smartonfhir.GetFHIRAuthToken(ctx, fhirURL, code)
 	if err != nil {
-		fmt.Fprint(w, err)
-		return
+		http.Error(w, "cannot exchange for FHIR access token", http.StatusBadRequest)
 	}
-	// TODO: Figure out whether client ID needs to be passed.
-	token, err := authConfig.Exchange(ctx, code)
-	sess.Set("fhirAccessToken", value)
+
+	fmt.Fprintf(w, "Successfully exchange for FHIR access token %s", token.AccessToken)
+	// TODO: Store token in session.
 }
 
 func getFirstParamOrEmpty(r *http.Request, key string) string {
