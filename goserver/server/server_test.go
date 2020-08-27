@@ -7,7 +7,7 @@ import (
 )
 
 func TestLaunchHandlerCheckISSAuthorization(t *testing.T) {
-	*authorizedFhirURL = "https://authorized.fhir.com"
+	s := &Server{AuthorizedFhirURL: "https://authorized.fhir.com"}
 	tests := []struct {
 		name, queryParameters string
 		expectedHTTPStatus    int
@@ -36,7 +36,6 @@ func TestLaunchHandlerCheckISSAuthorization(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			s := &Server{}
 			req, err := http.NewRequest("GET", "?"+test.queryParameters, nil)
 			if err != nil {
 				t.Fatal(err)
