@@ -3,7 +3,11 @@
 # Running locally
 
 Go to the goserver directory and run
+
 `go run main.go --authorized_fhir_url={fhir_base_url}`
+
+The --authorized_fhir_url parameter must be set so that the app is authorized to launch.
+The value must match the iss query parameter passed to the server when calling its launch endpoint.
 
 # Testing
 
