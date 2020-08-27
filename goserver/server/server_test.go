@@ -3,11 +3,39 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
+func TestRunError(t *testing.T) {
+	tests := []struct {
+		name, authorizedFHIRURL string
+		expectedMessage         string
+	}{
+		{
+			name:            "no AuthorizedFHIRURL set, expecting error",
+			expectedMessage: "AuthorizedFHIRURL must be provided",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			s := &Server{AuthorizedFHIRURL: test.authorizedFHIRURL}
+			err := s.Run()
+			if err == nil {
+				t.Errorf("expecting error, but got nil")
+				return
+			}
+			if !strings.Contains(err.Error(), test.expectedMessage) {
+				t.Errorf("expecting error message to contain %s, but got %v", test.expectedMessage, err)
+				return
+			}
+		})
+	}
+}
+
 func TestLaunchHandlerCheckISSAuthorization(t *testing.T) {
-	s := &Server{AuthorizedFhirURL: "https://authorized.fhir.com"}
+	s := &Server{AuthorizedFHIRURL: "https://authorized.fhir.com"}
 	tests := []struct {
 		name, queryParameters string
 		expectedHTTPStatus    int

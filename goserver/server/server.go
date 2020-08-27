@@ -11,14 +11,17 @@ const (
 
 // Server handles incoming HTTP requests.
 type Server struct {
-	AuthorizedFhirURL string
-	Port              int
+	// AuthorizedFHIRURL is the FHIR URL authorized to launch this app. The value will be validated
+	// by launch endpoint to match the iss passed as the query parameter.
+	AuthorizedFHIRURL string
+	// The port the HTTP server runs on.
+	Port int
 }
 
 // Run starts HTTP server
 func (s *Server) Run() error {
-	if s.AuthorizedFhirURL == "" {
-		return fmt.Errorf("AuthorizedFhirURL must be provided")
+	if s.AuthorizedFHIRURL == "" {
+		return fmt.Errorf("AuthorizedFHIRURL must be provided")
 	}
 
 	http.HandleFunc(launchPath, s.handleLaunch)
@@ -32,7 +35,7 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing iss in URL query parameters", http.StatusUnauthorized)
 		return
 	}
-	if iss[0] != s.AuthorizedFhirURL {
+	if iss[0] != s.AuthorizedFHIRURL {
 		http.Error(w, fmt.Sprintf("unauthorized iss %s", iss[0]), http.StatusUnauthorized)
 		return
 	}

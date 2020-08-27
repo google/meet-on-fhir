@@ -1,4 +1,21 @@
-# TeleHealth v1
+# TeleHealth Integration Reference Implementation
+
+This repository contains an early release reference implementation that may be
+useful to developers wishing to integrate Google Meet into EHR systems that
+support SMART on FHIR.
+
+To use this reference implementation, you should fork this repository and add
+any required user interface or other integrations that are appropriate.
+
+## Prerequisites
+
+This reference implementation assumes that:
+
+  * The provider/physician has access to a GSuite account with the Calendar and
+    Meets applications enabled.
+  * If the patient is accessing the application on the desktop, they can join
+    the meeting anonymously.  If the patient accesses the application from
+    a mobile device, they must download the Meet application and sign in.
 
 # Running locally
 
