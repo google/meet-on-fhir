@@ -26,8 +26,12 @@ func (s *Server) Run() {
 
 func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 	iss := r.URL.Query()["iss"]
-	if len(iss) == 0 || len(iss[0]) < 1 || iss[0] != *authorizedFhirURL {
+	if len(iss) == 0 || len(iss[0]) < 1 {
 		http.Error(w, "missing iss in URL query parameters", http.StatusUnauthorized)
+		return
+	}
+	if iss[0] != *authorizedFhirURL {
+		http.Error(w, fmt.Sprintf("unauthorized iss %s", iss[0]), http.StatusUnauthorized)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
