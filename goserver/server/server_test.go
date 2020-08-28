@@ -21,9 +21,35 @@ func setupFHIRServer(authURL, tokenURL string) string {
 	return fhirServer.URL
 }
 
+func TestRunError(t *testing.T) {
+	tests := []struct {
+		name, authorizedFHIRURL string
+		expectedMessage         string
+	}{
+		{
+			name:            "invalid authorized fhir url",
+			expectedMessage: authorizedFHIRURLNotProvidedErrorMsg,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			s := &Server{AuthorizedFHIRURL: test.authorizedFHIRURL}
+			err := s.Run()
+			if err == nil {
+				t.Fatal("expecting error, but got nil")
+			}
+			if !strings.Contains(err.Error(), test.expectedMessage) {
+				t.Errorf("expecting error message to contain %s, but got %v", test.expectedMessage, err)
+				return
+			}
+		})
+	}
+}
+
 func TestLaunchHandlerInvalidParameters(t *testing.T) {
 	fhirURL := setupFHIRServer("https://auth.com", "https://token.com")
-	s := &Server{AuthorizedFhirURL: fhirURL}
+	s := &Server{AuthorizedFHIRURL: fhirURL}
 	tests := []struct {
 		name, queryParameters string
 		expectedHTTPStatus    int
@@ -81,7 +107,7 @@ func TestLaunchHandler(t *testing.T) {
 	*smartonfhir.FHIRRedirectURL = "https://redirect.com"
 	*smartonfhir.FHIRClientID = "fhir_client"
 
-	s := &Server{AuthorizedFhirURL: fhirURL}
+	s := &Server{AuthorizedFHIRURL: fhirURL}
 	req, err := http.NewRequest("GET", fmt.Sprintf("?launch=123&iss=%s", fhirURL), nil)
 	if err != nil {
 		t.Fatal(err)
@@ -133,7 +159,7 @@ func TestLaunchHandler(t *testing.T) {
 }
 
 func TestHandleFHIRRedirectError(t *testing.T) {
-	s := &Server{AuthorizedFhirURL: "https://fhir.com"}
+	s := &Server{AuthorizedFHIRURL: "https://fhir.com"}
 	tests := []struct {
 		name, queryParameters string
 		existingSession       map[string]string
