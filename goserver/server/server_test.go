@@ -14,7 +14,7 @@ func TestRunError(t *testing.T) {
 	}{
 		{
 			name:            "invalid authorized fhir url",
-			expectedMessage: "AuthorizedFHIRURL must be provided",
+			expectedMessage: authorizedFHIRURLNotProvidedErrorMsg,
 		},
 	}
 
@@ -23,8 +23,7 @@ func TestRunError(t *testing.T) {
 			s := &Server{AuthorizedFHIRURL: test.authorizedFHIRURL}
 			err := s.Run()
 			if err == nil {
-				t.Errorf("expecting error, but got nil")
-				return
+				t.Fatal("expecting error, but got nil")
 			}
 			if !strings.Contains(err.Error(), test.expectedMessage) {
 				t.Errorf("expecting error message to contain %s, but got %v", test.expectedMessage, err)

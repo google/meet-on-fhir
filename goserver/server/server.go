@@ -7,6 +7,8 @@ import (
 
 const (
 	launchPath = "/launch"
+
+	authorizedFHIRURLNotProvidedErrorMsg = "AuthorizedFHIRURL must be provided"
 )
 
 // Server handles incoming HTTP requests.
@@ -21,7 +23,7 @@ type Server struct {
 // Run starts HTTP server
 func (s *Server) Run() error {
 	if s.AuthorizedFHIRURL == "" {
-		return fmt.Errorf("AuthorizedFHIRURL must be provided")
+		return fmt.Errorf(authorizedFHIRURLNotProvidedErrorMsg)
 	}
 
 	http.HandleFunc(launchPath, s.handleLaunch)
