@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/google/meet-on-fhir/session"
 )
 
 func TestRunError(t *testing.T) {
@@ -20,7 +22,7 @@ func TestRunError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			s := &Server{AuthorizedFHIRURL: test.authorizedFHIRURL}
+			s := &Server{authorizedFHIRURL: test.authorizedFHIRURL}
 			err := s.Run()
 			if err == nil {
 				t.Fatal("expecting error, but got nil")
@@ -33,8 +35,8 @@ func TestRunError(t *testing.T) {
 	}
 }
 
-func TestLaunchHandlerCheckISSAuthorization(t *testing.T) {
-	s := &Server{AuthorizedFHIRURL: "https://authorized.fhir.com"}
+func TestLaunchHandler_HTTPError(t *testing.T) {
+	s := &Server{authorizedFHIRURL: "https://authorized.fhir.com"}
 	tests := []struct {
 		name, queryParameters string
 		expectedHTTPStatus    int
@@ -54,19 +56,11 @@ func TestLaunchHandlerCheckISSAuthorization(t *testing.T) {
 			queryParameters:    "iss=https://unauthorized.fhir.com",
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
-		{
-			name:               "authorized iss",
-			queryParameters:    "iss=https://authorized.fhir.com",
-			expectedHTTPStatus: http.StatusOK,
-		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			req, err := http.NewRequest("GET", "?"+test.queryParameters, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			req := httptest.NewRequest("GET", "/?"+test.queryParameters, nil)
 			rr := httptest.NewRecorder()
 			s.handleLaunch(rr, req)
 			if status := rr.Code; status != test.expectedHTTPStatus {
@@ -74,5 +68,26 @@ func TestLaunchHandlerCheckISSAuthorization(t *testing.T) {
 					status, test.expectedHTTPStatus)
 			}
 		})
+	}
+}
+
+func TestHandleLaunch(t *testing.T) {
+	fhirURL := "https://authorized.fhir.com"
+	sm := session.NewInMemorySessionManager()
+	s := &Server{authorizedFHIRURL: fhirURL, sm: sm}
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/?iss="+fhirURL, nil)
+	s.handleLaunch(httptest.NewRecorder(), req)
+	if status := rr.Code; status != http.StatusOK {
+		t.Fatalf("server.handleLaunch returned wrong status code, got %v, want %v",
+			status, http.StatusOK)
+	}
+
+	sess, err := session.Find(sm, req)
+	if err != nil {
+		t.Fatal("cannot find session")
+	}
+	if sess.FHIRURL != fhirURL {
+		t.Fatalf("unexpected FHIRURL session %s, wanted %s", sess.FHIRURL, fhirURL)
 	}
 }
