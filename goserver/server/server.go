@@ -15,12 +15,12 @@ const (
 
 // Server handles incoming HTTP requests.
 type Server struct {
-	// AuthorizedFHIRURL is the FHIR URL authorized to launch this app. The value will be validated
+	// authorizedFHIRURL is the FHIR URL authorized to launch this app. The value will be validated
 	// by launch endpoint to match the iss passed as the query parameter.
 	authorizedFHIRURL string
 	// The port the HTTP server runs on.
 	port int
-	// SM is the session manager of the server.
+	// sm is the session manager of the server.
 	sm session.Manager
 }
 
@@ -35,6 +35,7 @@ func (s *Server) Run() error {
 	}
 
 	http.HandleFunc(launchPath, s.handleLaunch)
+
 	http.ListenAndServe(fmt.Sprintf(":%d", s.port), http.DefaultServeMux)
 	return nil
 }
@@ -49,6 +50,7 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("unauthorized iss %s", iss[0]), http.StatusUnauthorized)
 		return
 	}
+
 	sess, err := session.New(s.sm, w, r)
 	if err != nil {
 		http.Error(w, "cannot create session", http.StatusBadRequest)
@@ -56,5 +58,6 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 	}
 	sess.FHIRURL = iss[0]
 	s.sm.Save(sess)
+
 	w.WriteHeader(http.StatusOK)
 }
