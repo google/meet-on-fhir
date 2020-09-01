@@ -25,7 +25,7 @@ The application requires several things to be configured:
   * A SMART on FHIR Client ID registered with the EHR system
   * A secret key used to encrypt the session cookie
   * The calendar API must be enabled in the project
-  * (If EHR writeback is enabled) EHR address and port to receive HL7 messages sent with MLLP
+  * (If EHR writeback is enabled) the EHR address and port to receive HL7 messages sent with MLLP
 
 The OAuth2 Client ID can be created using the [Cloud
 Console](https://console.cloud.google.com/apis/credentials/consent).
@@ -58,8 +58,8 @@ configured to launch as a new window in the SMART on FHIR integration point.
 ## EHR writeback configuration
 
 EHR writeback can be enabled/disabled in settings.json.
-If enabled, the app will report patient arrived and appointment status change
-events by sending MLLP encoded HL7 messages to the specified EHR address and port.
+If enabled, the app will report patient arrived events and appointment status changes
+by sending MLLP-encoded HL7 messages to the specified EHR address and port.
 The running environment must be allowed to establish TCP socket with the EHR server.
 
 # Running locally
