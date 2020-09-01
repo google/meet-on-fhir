@@ -80,8 +80,10 @@ Deploy the application using `gcloud app deploy`.
 If EHR writeback is enabled, a serverless connector must be created for the app
 to access resources in a VPC network where the EHR sever is connected to. Then
 in the app.yaml file, add the following section:
-`vpc_access_connector:\n`
-`    name: projects/HOST_PROJECT_ID/locations/CONNECTOR_REGION/connectors/CONNECTOR_NAME`
+```
+vpc_access_connector:
+    name: projects/PROJECT_ID/locations/CONNECTOR_REGION/connectors/CONNECTOR_NAME
+```
 Refer to (https://cloud.google.com/appengine/docs/standard/nodejs/connecting-vpc) for
 more details.
 
