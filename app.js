@@ -91,49 +91,52 @@ app.post('/hangouts', (request, response) => {
 app.post('/reportEvent', (request, response) => {
 	const type = request.body.type;
 	if (type != 'patient_arrived' && type != 'practitioner_arrived') {
-		response.status(500).send(`Invalid type ${type}`);
+		response.status(400).send(`Invalid type ${type}`);
 		return;
 	}
 	const encounterId = request.body.encounterId;
 	if (!encounterId) {
-		response.status(500).send('missing encounterId');
+		response.status(400).send('missing encounterId');
 		return;
 	}
 	const patientId = request.body.patientId;
 	if (!patientId) {
-		response.status(500).send('missing patientId');
+		response.status(400).send('missing patientId');
 		return
 	}
 	const patientName = request.body.patientName;
 	if (!patientName) {
-		response.status(500).send('missing patientName');
+		response.status(400).send('missing patientName');
 		return
 	}
 	
 	const key = datastore.key(['Encounter', encounterId]);
 	datastore.get(key).then(entity => {
 		if (!entity) {
-			response.status(500).send(`Meeting not found for encounter ${encounterId}`);
+			response.status(400).send(`Meeting not found for encounter ${encounterId}`);
 			return;
 		}
 
 		if (type == 'patient_arrived') {
 			if (entity.patientArriveTime) {
-				response.status(500).send(`patient has arrived before`);
+				response.status(202).send(`patient has arrived before`);
 				return;
 			}
+			debugLog('Updating patient arrive time for encounter ' + request.body.encounterId);
 			entity.patientArriveTime = Date.now();
 		}
-		if (type == 'practitiner_arrived') {
+		if (type == 'practitioner_arrived') {
 			if (entity.practitionerArriveTime) {
-				response.status(500).send(`practitioner has arrived before`);
+				response.status(202).send(`practitioner has arrived before`);
 				return;
 			}
+			debugLog('Updating practitioner arrive time for encounter ' + request.body.encounterId);
 			entity.practitionerArriveTime = Date.now();
 		}
 		return datastore.update(key, entity);
 	}).then(entity => {
-		if (!entity) {
+		if (!entity || !settings.enableEHRWriteback) {
+			response.status(200).send('EHR writeback is not needed or disabled.');
 			return;
 		}
 		if (type == 'patient_arrived') {
@@ -144,6 +147,8 @@ app.post('/reportEvent', (request, response) => {
 			debugLog('Sending appointment status change message to EHR for encounter ' + request.body.encounterId);
 			return mllp.setAppointmentStatusArrived(encounterId, patientId, patientName);
 		}
+	}).then(() => {
+		response.sendStatus(200);
 	}).catch(error(response));
 });
 

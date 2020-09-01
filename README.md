@@ -25,6 +25,7 @@ The application requires several things to be configured:
   * A SMART on FHIR Client ID registered with the EHR system
   * A secret key used to encrypt the session cookie
   * The calendar API must be enabled in the project
+  * (If EHR writeback is enabled) EHR address and port to receive HL7 messages sent with MLLP
 
 The OAuth2 Client ID can be created using the [Cloud
 Console](https://console.cloud.google.com/apis/credentials/consent).
@@ -54,6 +55,13 @@ localhost or your appspot.com subdomain).
 Note that this application does not work inside a frame, so it must be
 configured to launch as a new window in the SMART on FHIR integration point.
 
+## EHR writeback configuration
+
+EHR writeback can be enabled/disabled in settings.json.
+If enabled, the app will report patient arrived and appointment status change
+events by sending MLLP encoded HL7 messages to the specified EHR address and port.
+The running environment must be allowed to establish TCP socket with the EHR server.
+
 # Running locally
 
 You will need a recent version of Node.  Once installed, you can run `npm
@@ -68,6 +76,14 @@ To deploy on Google Cloud, you will need a project that does not already have
 an Appengine application deployed.
 
 Deploy the application using `gcloud app deploy`.
+
+If EHR writeback is enabled, a serverless connector must be created for the app
+to access resources in a VPC network where the EHR sever is connected to. Then
+in the app.yaml file, add the following section:
+`vpc_access_connector:`
+`name: projects/HOST_PROJECT_ID/locations/CONNECTOR_REGION/connectors/CONNECTOR_NAME`
+Refer to https://cloud.google.com/appengine/docs/standard/nodejs/connecting-vpc for
+more details.
 
 # Testing
 
