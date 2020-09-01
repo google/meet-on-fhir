@@ -7,5 +7,8 @@
     "redirectUri": "https://your-url/authenticate"
   },
   "fhirClientId": "a SMART on FHIR client ID registered with the EHR",
+  "enableEHRWriteback": false,
+  "mllpIpAddress": "the IP address HL7 messages will be sent for with mllp",
+  "mllpPort": 2575,
   "debugLogging": false
 }

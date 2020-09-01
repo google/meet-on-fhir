@@ -17,11 +17,13 @@
 const calendar = require('./calendar.js');
 const datastore = require('./datastore.js');
 const user = require('./user.js');
+const mllp = require('./mllp.js');
 
 const settings = require('./settings.json');
 
 const express = require('express');
 const session = require('cookie-session');
+const e = require('express');
 
 const app = express();
 app.use(express.static('static'));
@@ -83,6 +85,65 @@ app.post('/hangouts', (request, response) => {
 				});
 			});
 		});
+	}).catch(error(response));
+});
+
+app.post('/reportEvent', (request, response) => {
+	const type = request.body.type;
+	if (type != 'patient_arrived' && type != 'practitioner_arrived') {
+		response.status(500).send(`Invalid type ${type}`);
+		return;
+	}
+	const encounterId = request.body.encounterId;
+	if (!encounterId) {
+		response.status(500).send('missing encounterId');
+		return;
+	}
+	const patientId = request.body.patientId;
+	if (!patientId) {
+		response.status(500).send('missing patientId');
+		return
+	}
+	const patientName = request.body.patientName;
+	if (!patientName) {
+		response.status(500).send('missing patientName');
+		return
+	}
+	
+	const key = datastore.key(['Encounter', encounterId]);
+	datastore.get(key).then(entity => {
+		if (!entity) {
+			response.status(500).send(`Meeting not found for encounter ${encounterId}`);
+			return;
+		}
+
+		if (type == 'patient_arrived') {
+			if (entity.patientArriveTime) {
+				response.status(500).send(`patient has arrived before`);
+				return;
+			}
+			entity.patientArriveTime = Date.now();
+		}
+		if (type == 'practitiner_arrived') {
+			if (entity.practitionerArriveTime) {
+				response.status(500).send(`practitioner has arrived before`);
+				return;
+			}
+			entity.practitionerArriveTime = Date.now();
+		}
+		return datastore.update(key, entity);
+	}).then(entity => {
+		if (!entity) {
+			return;
+		}
+		if (type == 'patient_arrived') {
+			debugLog('Sending patient arrived notification to EHR for encounter ' + request.body.encounterId);
+			//TODO: Send patient arrived message to EHR.
+		}
+		if (entity.practitionerArriveTime && entity.patientArriveTime) {
+			debugLog('Sending appointment status change message to EHR for encounter ' + request.body.encounterId);
+			return mllp.setAppointmentStatusArrived(encounterId, patientId, patientName);
+		}
 	}).catch(error(response));
 });
 
