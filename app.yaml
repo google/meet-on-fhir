@@ -13,6 +13,3 @@
 # limitations under the License.
 
 runtime: nodejs10
-
-vpc_access_connector:
-    name: projects/hongyi-test/locations/us-east1/connectors/appengine
