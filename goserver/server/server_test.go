@@ -79,7 +79,7 @@ func TestHandleLaunch(t *testing.T) {
 	req := httptest.NewRequest("GET", "/?iss="+fhirURL, nil)
 	s.handleLaunch(httptest.NewRecorder(), req)
 	if status := rr.Code; status != http.StatusOK {
-		t.Fatalf("server.handleLaunch returned wrong status code, got %v, want %v",
+		t.Errorf("server.handleLaunch returned wrong status code, got %v, want %v",
 			status, http.StatusOK)
 	}
 

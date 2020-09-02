@@ -24,16 +24,16 @@ type Server struct {
 	sm session.Manager
 }
 
-func NewServer(authorizedFHIRURL string, port int, sm session.Manager) *Server {
-	return &Server{authorizedFHIRURL: authorizedFHIRURL, port: port, sm: sm}
+// NewServer creates and returns a new server.
+func NewServer(authorizedFHIRURL string, port int, sm session.Manager) (*Server, error) {
+	if authorizedFHIRURL == "" {
+		return nil, fmt.Errorf(authorizedFHIRURLNotProvidedErrorMsg)
+	}
+	return &Server{authorizedFHIRURL: authorizedFHIRURL, port: port, sm: sm}, nil
 }
 
 // Run starts HTTP server
 func (s *Server) Run() error {
-	if s.authorizedFHIRURL == "" {
-		return fmt.Errorf(authorizedFHIRURLNotProvidedErrorMsg)
-	}
-
 	http.HandleFunc(launchPath, s.handleLaunch)
 
 	http.ListenAndServe(fmt.Sprintf(":%d", s.port), http.DefaultServeMux)

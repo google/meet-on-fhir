@@ -1,11 +1,13 @@
 package session
 
 import (
+	"encoding/gob"
+	"bytes"
 	"fmt"
 	"time"
 )
 
-// Manager manages sessions for the server.
+/* Manager manages sessions for the server.
 type Manager interface {
 	// Create creates a new session with the given expire time.
 	Create(expireAt time.Time) (*Session, error)
@@ -14,6 +16,27 @@ type Manager interface {
 	// Save saves the given session by override the existing one.
 	// It will return an error if no existing one is found.
 	Save(session *Session) error
+}*/
+
+type Store interface {
+	Store(key string, val []byte) error
+	Retrieve(key string) ([]byte, error)
+}
+
+type Manager struct {
+	store     Store
+	sessionID func() string
+}
+
+func NewManager(ss Store) *Manager {
+	return &Manager{store: ss}
+}
+
+func (m *Manager) Create(expireAt time.Time) (*Session, error) {
+	sess := &Session{ExpireAt: expireAt, ID: m.sessionID()}
+	b := &bytes.Buffer{}
+	enc := gob.NewEncoder(b)
+	if err := m.store.Store(key, val)
 }
 
 // InMemorySessionManager is an in-memory implementation of Manager.

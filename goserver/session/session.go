@@ -22,8 +22,8 @@ const (
 
 // Session stores necessary information for a telehealth session.
 type Session struct {
-	sid, FHIRURL string
-	expireAt     time.Time
+	ID, FHIRURL string
+	expireAt    time.Time
 }
 
 // SessionID the id of the session.
