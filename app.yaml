@@ -13,3 +13,7 @@
 # limitations under the License.
 
 runtime: nodejs10
+
+# Connect AppEngine to VPC
+# vpc_access_connector:
+#     name: projects/PROJECT_ID/locations/CONNECTOR_REGION/connectors/CONNECTOR_NAME
