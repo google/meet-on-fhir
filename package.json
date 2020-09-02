@@ -5,6 +5,7 @@
 	"dependencies": {
 		"@google-cloud/datastore": "^5.1.0",
 		"@google-cloud/secret-manager": "^1.0.0",
+		"axios": "^0.20.0",
 		"cookie-session": "^1.4.0",
 		"date-format": "^3.0.0",
 		"express": "^4.17.1",

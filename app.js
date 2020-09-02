@@ -18,7 +18,7 @@ const calendar = require('./calendar.js');
 const datastore = require('./datastore.js');
 const user = require('./user.js');
 const mllp = require('./mllp.js');
-const https = require('https');
+const fhir = require('./fhir.js');
 
 const settings = require('./settings.json');
 
@@ -96,7 +96,7 @@ app.post('/reportEvent', (request, response) => {
 		return;
 	}
 	if (!settings.authorizedFhirUrls.includes(fhirUrl)) {
-		response.status(400).send(`unauthorized fhirUrl ${fhirUrl}`);
+		response.status(401).send(`unauthorized fhirUrl ${fhirUrl}`);
 		return;
 	}
 
@@ -130,8 +130,12 @@ app.post('/reportEvent', (request, response) => {
 		return
 	}
 	
-
-
+	const err = fhir.checkFhirAuthorization(fhirUrl, fhirAccessToken, encounterId);
+	if (err) {
+		debugLog('fhir authentication check failed with err ' + err);
+		response.status(401).send('fhir authentication check failed');
+		return
+	}
 
 	const key = datastore.key(['Encounter', encounterId]);
 	datastore.get(key).then(entity => {

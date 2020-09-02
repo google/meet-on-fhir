@@ -1,24 +1,14 @@
-var fhir = require('fhir.js');
+const axios = require('axios');
 
-var client = mkFhir({
-    baseUrl: 'http://try-fhirplace.hospital-systems.com'
-});
-
-client
-    .search( {type: 'Patient', query: { 'birthdate': '1974' }})
-    .then(function(res){
-        var bundle = res.data;
-        var count = (bundle.entry && bundle.entry.length) || 0;
-        console.log("# Patients born in 1974: ", count);
-    })
-    .catch(function(res){
-        //Error responses
-        if (res.status){
-            console.log('Error', res.status);
+exports.checkFhirAuthorization = async (fhirUrl, fhirToken, encounterId) => {
+    try {
+        const res =  await axios.get(
+            `https://${fhirUrl}/Encounter/${encounterId}`,
+            { headers: { Authorization: `Bearer ${fhirToken}` }});
+        if (res != 200) {
+            return new Error(`cannot find encounter ${encounterId}`)
         }
-
-        //Errors
-        if (res.message){
-            console.log('Error', res.message);
-        }
-    });
+    } catch (err) {
+        return err
+    };
+}
