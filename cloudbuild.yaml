@@ -1,0 +1,16 @@
+steps:
+  # Install node packages
+  - name: "node"
+    entrypoint: "npm"
+    args: ["install"]
+
+  # Run Angular unit tests
+  - name: "trion/ng-cli-karma"
+    args: ["ng", "test", "--watch", "false"]
+    dir: "ui"
+
+  # Build Angualr production app
+  - name: "node"
+    entrypoint: "npm"
+    args: ["run", "build", "--prod"]
+    dir: "ui"
