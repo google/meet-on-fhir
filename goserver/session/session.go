@@ -22,31 +22,45 @@ const (
 
 // Session stores necessary information for a telehealth session.
 type Session struct {
-	ID, FHIRURL string
-	expireAt    time.Time
+	ID        string
+	ExpiresAt time.Time
+	Value     map[string]interface{}
 }
 
-// SessionID the id of the session.
-func (s *Session) SessionID() string {
-	return s.sid
+func (s *Session) Put(key string, val interface{}) {
+	if s.Value == nil {
+		s.Value = make(map[string]interface{})
+	}
+	s.Value[key] = val
+}
+
+func (s *Session) Get(key string) interface{} {
+	if s.Value == nil {
+		return nil
+	}
+	v, ok := s.Value[key]
+	if !ok {
+		return nil
+	}
+	return v
 }
 
 // New creates a new session and set cookie containning the encoded session id.
-func New(m Manager, w http.ResponseWriter, r *http.Request) (*Session, error) {
+func New(m *StoreManager, w http.ResponseWriter, r *http.Request) (*Session, error) {
 	expireAt := time.Now().Add(sessionLifeInSec * time.Second)
 	s, err := m.Create(expireAt)
 	if err != nil {
 		return nil, err
 	}
 	expiration := time.Now().Add(cookieLifeInSec * time.Second)
-	cookie := &http.Cookie{Name: cookieName, Value: encodeSessionID(s.SessionID()), Expires: expiration}
+	cookie := &http.Cookie{Name: cookieName, Value: encodeSessionID(s.ID), Expires: expiration}
 	http.SetCookie(w, cookie)
 	r.AddCookie(cookie)
 	return s, nil
 }
 
 // Find returns the session in session manager matching the session id in the cookie of the request.
-func Find(m Manager, r *http.Request) (*Session, error) {
+func Find(m *StoreManager, r *http.Request) (*Session, error) {
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
 		return nil, err

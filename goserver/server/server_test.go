@@ -9,7 +9,7 @@ import (
 	"github.com/google/meet-on-fhir/session"
 )
 
-func TestRunError(t *testing.T) {
+func TestNewServerError(t *testing.T) {
 	tests := []struct {
 		name, authorizedFHIRURL string
 		expectedMessage         string
@@ -22,8 +22,7 @@ func TestRunError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			s := &Server{authorizedFHIRURL: test.authorizedFHIRURL}
-			err := s.Run()
+			_, err := NewServer(test.authorizedFHIRURL, 0, nil)
 			if err == nil {
 				t.Fatal("expecting error, but got nil")
 			}
@@ -73,7 +72,7 @@ func TestLaunchHandler_HTTPError(t *testing.T) {
 
 func TestHandleLaunch(t *testing.T) {
 	fhirURL := "https://authorized.fhir.com"
-	sm := session.NewInMemorySessionManager()
+	sm := session.NewStoreManager(session.NewMemoryStore(), func() string { return "test-session-id" })
 	s := &Server{authorizedFHIRURL: fhirURL, sm: sm}
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/?iss="+fhirURL, nil)
@@ -87,7 +86,7 @@ func TestHandleLaunch(t *testing.T) {
 	if err != nil {
 		t.Fatal("cannot find session")
 	}
-	if sess.FHIRURL != fhirURL {
-		t.Fatalf("unexpected FHIRURL session %s, wanted %s", sess.FHIRURL, fhirURL)
+	if sess.Get(fhirURLSessionKey).(string) != fhirURL {
+		t.Fatalf("unexpected fhirURL in session: %s, wanted: %s", sess.Get(fhirURLSessionKey).(string), fhirURL)
 	}
 }

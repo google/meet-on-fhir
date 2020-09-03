@@ -11,6 +11,8 @@ const (
 	launchPath = "/launch"
 
 	authorizedFHIRURLNotProvidedErrorMsg = "AuthorizedFHIRURL must be provided"
+
+	fhirURLSessionKey = "fhirUrl"
 )
 
 // Server handles incoming HTTP requests.
@@ -21,11 +23,11 @@ type Server struct {
 	// The port the HTTP server runs on.
 	port int
 	// sm is the session manager of the server.
-	sm session.Manager
+	sm *session.StoreManager
 }
 
 // NewServer creates and returns a new server.
-func NewServer(authorizedFHIRURL string, port int, sm session.Manager) (*Server, error) {
+func NewServer(authorizedFHIRURL string, port int, sm *session.StoreManager) (*Server, error) {
 	if authorizedFHIRURL == "" {
 		return nil, fmt.Errorf(authorizedFHIRURLNotProvidedErrorMsg)
 	}
@@ -56,7 +58,7 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "cannot create session", http.StatusBadRequest)
 		return
 	}
-	sess.FHIRURL = iss[0]
+	sess.Put(fhirURLSessionKey, iss[0])
 	s.sm.Save(sess)
 
 	w.WriteHeader(http.StatusOK)

@@ -2,12 +2,13 @@ package session
 
 import (
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 )
 
 func TestNew(t *testing.T) {
-	sm := NewInMemorySessionManager()
+	sm := NewStoreManager(NewMemoryStore(), func() string { return "test-id" })
 	rr := httptest.NewRecorder()
 	r := httptest.NewRequest("method", "https://test.com", nil)
 	sess, err := New(sm, rr, r)
@@ -16,7 +17,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// Make sure session is created in manager.
-	sess, err = sm.Find(sess.SessionID())
+	sess, err = sm.Find(sess.ID)
 	if err != nil {
 		t.Fatalf("cannot find session in session manager, got err: %v", err)
 	}
@@ -29,7 +30,7 @@ func TestNew(t *testing.T) {
 	if len(cookies) < 1 {
 		t.Fatal("cannot find cookie response")
 	}
-	esid := encodeSessionID(sess.SessionID())
+	esid := encodeSessionID(sess.ID)
 	if !strings.Contains(cookies[0], cookieName) {
 		t.Fatalf("cookie %s set in response", cookieName)
 	}
@@ -51,7 +52,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestFind(t *testing.T) {
-	sm := NewInMemorySessionManager()
+	sm := NewStoreManager(NewMemoryStore(), func() string { return "test-id" })
 	r := httptest.NewRequest("method", "https://test.com", nil)
 	sess, err := New(sm, httptest.NewRecorder(), r)
 	if err != nil {
@@ -62,7 +63,8 @@ func TestFind(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot find session, got err: %v", err)
 	}
-	if foundSess != sess {
-		t.Fatal("The found session is not the created one")
+
+	if !reflect.DeepEqual(sess, foundSess) {
+		t.Fatal("The found session does not equal to the created one")
 	}
 }
