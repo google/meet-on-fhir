@@ -89,7 +89,7 @@ app.post('/hangouts', (request, response) => {
 	}).catch(error(response));
 });
 
-app.post('/reportEvent', (request, response) => {
+app.post('/reportEvent', async (request, response) => {
 	const fhirUrl = request.body.fhirUrl;
 	if (!fhirUrl) {
 		response.status(400).send("missing fhirUrl");
@@ -130,8 +130,9 @@ app.post('/reportEvent', (request, response) => {
 		return
 	}
 	
-	const err = fhir.checkFhirAuthorization(fhirUrl, fhirAccessToken, encounterId);
-	if (err) {
+	try {
+		await fhir.checkFhirAuthorization(fhirUrl, fhirAccessToken, encounterId);
+	} catch (err) {
 		debugLog('fhir authentication check failed with err ' + err);
 		response.status(401).send('fhir authentication check failed');
 		return
