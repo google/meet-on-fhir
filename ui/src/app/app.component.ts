@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import {Component} from '@angular/core';
+
+import {OrganizationInfo, SettingsService} from './settings.service';
 
 @Component({
   selector: 'app-root',
@@ -6,5 +8,9 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  title = 'ui';
+  organizationInfo: OrganizationInfo;
+
+  constructor(private readonly settings: SettingsService) {
+    this.organizationInfo = this.settings.organizationInfo;
+  }
 }

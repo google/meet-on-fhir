@@ -1,10 +1,15 @@
-import { NgModule } from '@angular/core';
-import { Routes, RouterModule } from '@angular/router';
+import {NgModule} from '@angular/core';
+import {RouterModule, Routes} from '@angular/router';
 
-const routes: Routes = [];
+import {LanguageSelectorComponent} from './language-selector/language-selector.component';
+import {LanguageSelectorGuard} from './language-selector/language-selector.guard';
 
-@NgModule({
-  imports: [RouterModule.forRoot(routes)],
-  exports: [RouterModule]
-})
-export class AppRoutingModule { }
+const routes: Routes = [{
+  path: 'select-language',
+  component: LanguageSelectorComponent,
+  canActivate: [LanguageSelectorGuard]
+}];
+
+@NgModule({imports: [RouterModule.forRoot(routes)], exports: [RouterModule]})
+export class AppRoutingModule {
+}
