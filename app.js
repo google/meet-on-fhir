@@ -129,8 +129,8 @@ app.post('/reportEvent', async (request, response) => {
 		response.status(400).send('missing patientName');
 		return
 	}
-  
-    try {
+
+	try {
 		await fhir.checkFhirAuthorization(fhirUrl, fhirAccessToken, encounterId);
 	} catch (err) {
 		debugLog('fhir authentication check failed with err ' + err);
