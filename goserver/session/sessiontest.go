@@ -29,9 +29,9 @@ func (s *MemoryStore) Store(key string, val []byte, expiresAt time.Time) error {
 
 // Retrieve implements Retrieve of Store interface.
 func (s *MemoryStore) Retrieve(key string) ([]byte, time.Time, error) {
-	i := s.items[key]
-	if i == nil {
-		return nil, time.Time{}, nil
+	i, ok := s.items[key]
+	if !ok {
+		return nil, time.Time{}, ErrNotFound
 	}
 	return i.(*item).val, i.(*item).expiresAt, nil
 }

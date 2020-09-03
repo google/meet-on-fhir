@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	// SessionCookieSecret is used to encrypt the cookie session id.
 	SessionCookieSecret = ""
 )
 
