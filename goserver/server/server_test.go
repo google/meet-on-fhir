@@ -35,7 +35,6 @@ func TestNewServerError(t *testing.T) {
 }
 
 func TestLaunchHandler_HTTPError(t *testing.T) {
-	s := &Server{authorizedFHIRURL: "https://authorized.fhir.com"}
 	tests := []struct {
 		name, queryParameters string
 		expectedHTTPStatus    int
@@ -59,6 +58,11 @@ func TestLaunchHandler_HTTPError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			s, err := NewServer("https://authorized.fhir.com", 0, nil)
+			if err != nil {
+				t.Fatalf("NewServer(authorizedFHIRURL, 0, sm) -> %v, nil expected", err)
+				return
+			}
 			req := httptest.NewRequest("GET", "/?"+test.queryParameters, nil)
 			rr := httptest.NewRecorder()
 			s.handleLaunch(rr, req)
@@ -73,7 +77,11 @@ func TestLaunchHandler_HTTPError(t *testing.T) {
 func TestHandleLaunch(t *testing.T) {
 	fhirURL := "https://authorized.fhir.com"
 	sm := session.NewStoreManager(session.NewMemoryStore(), func() string { return "test-session-id" })
-	s := &Server{authorizedFHIRURL: fhirURL, sm: sm}
+	s, err := NewServer(fhirURL, 0, sm)
+	if err != nil {
+		t.Fatalf("NewServer(authorizedFHIRURL, 0, sm) -> %v, nil expected", err)
+		return
+	}
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/?iss="+fhirURL, nil)
 	s.handleLaunch(httptest.NewRecorder(), req)

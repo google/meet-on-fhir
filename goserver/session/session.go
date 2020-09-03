@@ -4,7 +4,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
-	"flag"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -12,7 +11,9 @@ import (
 	"time"
 )
 
-var sessionCookieSecret = flag.String("session_cookie_secret", "", "secret key used to encrypt the session cookie")
+var (
+	SessionCookieSecret = ""
+)
 
 const (
 	sessionLifeInSec = 7200
@@ -27,6 +28,7 @@ type Session struct {
 	Value     map[string]interface{}
 }
 
+// Put stores the key-val pair in Session.
 func (s *Session) Put(key string, val interface{}) {
 	if s.Value == nil {
 		s.Value = make(map[string]interface{})
@@ -34,6 +36,7 @@ func (s *Session) Put(key string, val interface{}) {
 	s.Value[key] = val
 }
 
+// Get returns the value for the given key.
 func (s *Session) Get(key string) interface{} {
 	if s.Value == nil {
 		return nil
@@ -59,7 +62,7 @@ func New(m *StoreManager, w http.ResponseWriter, r *http.Request) (*Session, err
 	return s, nil
 }
 
-// Find returns the session in session manager matching the session id in the cookie of the request.
+// Find returns the session whose id matches the session id in the cookie of the request.
 func Find(m *StoreManager, r *http.Request) (*Session, error) {
 	cookie, err := r.Cookie(cookieName)
 	if err != nil {
@@ -80,7 +83,7 @@ func encodeSessionID(sid string) string {
 }
 
 func signature(sid string) string {
-	h := hmac.New(sha1.New, []byte(*sessionCookieSecret))
+	h := hmac.New(sha1.New, []byte(SessionCookieSecret))
 	h.Write([]byte(sid))
 	return fmt.Sprintf("%x", h.Sum(nil))
 }

@@ -1,7 +1,6 @@
 package session
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -30,9 +29,9 @@ func (s *MemoryStore) Store(key string, val []byte, expiresAt time.Time) error {
 
 // Retrieve implements Retrieve of Store interface.
 func (s *MemoryStore) Retrieve(key string) ([]byte, time.Time, error) {
-	i, ok := s.items[key]
-	if !ok {
-		return nil, time.Time{}, fmt.Errorf("cannot find key %s", key)
+	i := s.items[key]
+	if i == nil {
+		return nil, time.Time{}, nil
 	}
 	return i.(*item).val, i.(*item).expiresAt, nil
 }
