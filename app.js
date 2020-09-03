@@ -105,13 +105,13 @@ app.post('/reportEvent', async (request, response) => {
 		response.status(400).send("missing fhirAccessToken");
 		return;
 	}
-
+  
 	const type = request.body.type;
 	if (type != 'patient_arrived' && type != 'practitioner_arrived') {
 		response.status(400).send(`Invalid type ${type}`);
 		return;
 	}
-
+  
 	const encounterId = request.body.encounterId;
 	if (!encounterId) {
 		response.status(400).send('missing encounterId');
@@ -129,15 +129,15 @@ app.post('/reportEvent', async (request, response) => {
 		response.status(400).send('missing patientName');
 		return
 	}
-	
-	try {
+  
+  try {
 		await fhir.checkFhirAuthorization(fhirUrl, fhirAccessToken, encounterId);
 	} catch (err) {
 		debugLog('fhir authentication check failed with err ' + err);
 		response.status(401).send('fhir authentication check failed');
 		return
 	}
-
+	
 	const key = datastore.key(['Encounter', encounterId]);
 	datastore.get(key).then(entity => {
 		if (!entity) {

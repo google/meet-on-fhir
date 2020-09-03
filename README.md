@@ -79,7 +79,9 @@ Deploy the application using `gcloud app deploy`.
 
 If EHR writeback is enabled, a serverless connector must be created for the app
 to access resources in a VPC network where the EHR server is connected to. Then
-to the app.yaml file in the app folder, add the following section:
+to the [app.yaml](https://github.com/google/meet-on-fhir/blob/5c71b37b3bdf0703c281bd8e23d5dd383b28bee8/app.yaml)
+file in the root directory of this repository, add the following section:
+
 ```
 vpc_access_connector:
     name: projects/PROJECT_ID/locations/CONNECTOR_REGION/connectors/CONNECTOR_NAME
