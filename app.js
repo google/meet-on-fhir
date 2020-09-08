@@ -134,7 +134,7 @@ app.post('/reportEvent', async (request, response) => {
 		await fhir.checkFhirAuthorization(fhirUrl, fhirAccessToken, encounterId);
 	} catch (err) {
 		debugLog('fhir authentication check failed with err ' + err);
-		response.status(401).send('fhir authentication check failed');
+		response.status(403).send('fhir authentication check failed');
 		return
 	}
 	
