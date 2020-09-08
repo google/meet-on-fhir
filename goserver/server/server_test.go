@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -9,8 +8,17 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-session/session"
+	"github.com/google/meet-on-fhir/session"
 	"github.com/google/meet-on-fhir/smartonfhir"
+)
+
+var (
+	testLaunchID        = "123"
+	testFHIRAuthURL     = "https://auth.com"
+	testFHIRTokenURL    = "https://token.com"
+	testFHIRClientID    = "fhir_client"
+	testFHIRRedirectURL = "https://redirect.com"
+	testScopes          = []string{"launch", "profile"}
 )
 
 func setupFHIRServer(authURL, tokenURL string) string {
@@ -21,7 +29,14 @@ func setupFHIRServer(authURL, tokenURL string) string {
 	return fhirServer.URL
 }
 
-func TestRunError(t *testing.T) {
+func defaultServer(fhirURL string) *Server {
+	sm := session.NewStoreManager(session.NewMemoryStore(), func() string { return "test-session-id" })
+	sc := smartonfhir.NewConfig(testFHIRClientID, testFHIRRedirectURL, testScopes)
+	s, _ := NewServer(fhirURL, 0, sm, sc)
+	return s
+}
+
+func TestNewServerError(t *testing.T) {
 	tests := []struct {
 		name, authorizedFHIRURL string
 		expectedMessage         string
@@ -34,8 +49,7 @@ func TestRunError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			s := &Server{AuthorizedFHIRURL: test.authorizedFHIRURL}
-			err := s.Run()
+			_, err := NewServer(test.authorizedFHIRURL, 0, nil, nil)
 			if err == nil {
 				t.Fatal("expecting error, but got nil")
 			}
@@ -47,9 +61,7 @@ func TestRunError(t *testing.T) {
 	}
 }
 
-func TestLaunchHandlerInvalidParameters(t *testing.T) {
-	fhirURL := setupFHIRServer("https://auth.com", "https://token.com")
-	s := &Server{AuthorizedFHIRURL: fhirURL}
+func TestLaunchHandler_HTTPError(t *testing.T) {
 	tests := []struct {
 		name, queryParameters string
 		expectedHTTPStatus    int
@@ -69,29 +81,12 @@ func TestLaunchHandlerInvalidParameters(t *testing.T) {
 			queryParameters:    "iss=https://unauthorized.fhir.com&launch=123",
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
-		{
-			name:               "empty launch id",
-			queryParameters:    "launch=\"\"",
-			expectedHTTPStatus: http.StatusUnauthorized,
-		},
-		{
-			name:               "no launch id",
-			queryParameters:    fmt.Sprintf("iss=%s", fhirURL),
-			expectedHTTPStatus: http.StatusUnauthorized,
-		},
-		{
-			name:               "with authorized iss and launch id",
-			queryParameters:    fmt.Sprintf("iss=%s&launch=123", fhirURL),
-			expectedHTTPStatus: http.StatusFound,
-		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			req, err := http.NewRequest("GET", "?"+test.queryParameters, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			s := defaultServer("https://authorized.fhir.com")
+			req := httptest.NewRequest("GET", "/?"+test.queryParameters, nil)
 			rr := httptest.NewRecorder()
 			s.handleLaunch(rr, req)
 			if status := rr.Code; status != test.expectedHTTPStatus {
@@ -103,55 +98,49 @@ func TestLaunchHandlerInvalidParameters(t *testing.T) {
 }
 
 func TestLaunchHandler(t *testing.T) {
-	fhirURL := setupFHIRServer("https://auth.com", "https://token.com")
-	*smartonfhir.FHIRRedirectURL = "https://redirect.com"
-	*smartonfhir.FHIRClientID = "fhir_client"
-
-	s := &Server{AuthorizedFHIRURL: fhirURL}
-	req, err := http.NewRequest("GET", fmt.Sprintf("?launch=123&iss=%s", fhirURL), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	fhirURL := setupFHIRServer(testFHIRAuthURL, testFHIRTokenURL)
+	s := defaultServer(fhirURL)
 	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", fmt.Sprintf("/?launch=%s&iss=%s", testLaunchID, fhirURL), nil)
 	s.handleLaunch(rr, req)
 	if rr.Code != http.StatusFound {
 		t.Errorf("server.handleLaunch returned wrong status code: got %v want %v",
 			rr.Code, http.StatusFound)
 	}
-	if len(req.Cookies()) == 0 {
-		t.Errorf("cookies not set in request")
-	}
-	sess, err := session.Start(req.Context(), nil, req)
+
+	// Make sure session is created and contains expected values.
+	sess, err := session.Find(s.sm, req)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("cannot find session in either request or store, got err %v", err)
 	}
-	if v, ok := sess.Get("fhirURL"); !ok || v.(string) != fhirURL {
+	if v := sess.Get(fhirURLSessionKey).(string); v != fhirURL {
 		t.Errorf("invalid fhirURL in session, got %v, exp %s", v, fhirURL)
 	}
-	if v, ok := sess.Get("launchID"); !ok || v.(string) != "123" {
-		t.Errorf("invalid launchID in session, got %v, exp 123", v)
+	if v := sess.Get(launchIDSessionKey).(string); v != testLaunchID {
+		t.Errorf("invalid launchID in session, got %v, exp %s", v, testLaunchID)
 	}
+
 	redirectURL := rr.Header().Get("Location")
-	if !strings.HasPrefix(redirectURL, "https://auth.com") {
-		t.Errorf("redirect URL %s does not start with https://auth.com", redirectURL)
+	if !strings.HasPrefix(redirectURL, testFHIRAuthURL) {
+		t.Errorf("redirect URL %s does not start with %s", redirectURL, testFHIRAuthURL)
 	}
 	if !strings.Contains(redirectURL, "response_type=code") {
 		t.Errorf("redirect URL %s does not contain response_type=code", redirectURL)
 	}
-	if !strings.Contains(redirectURL, fmt.Sprintf("client_id=%s", *smartonfhir.FHIRClientID)) {
-		t.Errorf("redirect URL %s does not contain client_id=%s", redirectURL, *smartonfhir.FHIRClientID)
+	if !strings.Contains(redirectURL, fmt.Sprintf("client_id=%s", testFHIRClientID)) {
+		t.Errorf("redirect URL %s does not contain client_id=%s", redirectURL, testFHIRClientID)
 	}
-	if !strings.Contains(redirectURL, fmt.Sprintf("redirect_uri=%s", url.QueryEscape(*smartonfhir.FHIRRedirectURL))) {
-		t.Errorf("redirect URL %s does not contain redirect_uri=%s", redirectURL, url.QueryEscape(*smartonfhir.FHIRRedirectURL))
+	if !strings.Contains(redirectURL, fmt.Sprintf("redirect_uri=%s", url.QueryEscape(testFHIRRedirectURL))) {
+		t.Errorf("redirect URL %s does not contain redirect_uri=%s", redirectURL, url.QueryEscape(testFHIRRedirectURL))
 	}
-	if !strings.Contains(redirectURL, "launch=123") {
-		t.Errorf("redirect URL %s does not contain launch=123", redirectURL)
+	if !strings.Contains(redirectURL, fmt.Sprintf("launch=%s", testLaunchID)) {
+		t.Errorf("redirect URL %s does not contain launch=%s", redirectURL, testLaunchID)
 	}
-	if !strings.Contains(redirectURL, "scope=") {
-		t.Errorf("redirect URL %s does not contain scope=", redirectURL)
+	if !strings.Contains(redirectURL, fmt.Sprintf("scope=%s", strings.Join(testScopes, "+"))) {
+		t.Errorf("redirect URL %s does not contain scope=%s", redirectURL, strings.Join(testScopes, "+"))
 	}
-	if !strings.Contains(redirectURL, fmt.Sprintf("state=%s", sess.SessionID())) {
-		t.Errorf("redirect URL %s does not contain state=%s", redirectURL, sess.SessionID())
+	if !strings.Contains(redirectURL, fmt.Sprintf("state=%s", sess.ID)) {
+		t.Errorf("redirect URL %s does not contain state=%s", redirectURL, sess.ID)
 	}
 	if !strings.Contains(redirectURL, fmt.Sprintf("aud=%s", url.QueryEscape(fhirURL))) {
 		t.Errorf("redirect URL %s does not contain aud=%s", redirectURL, url.QueryEscape(fhirURL))
@@ -159,13 +148,13 @@ func TestLaunchHandler(t *testing.T) {
 }
 
 func TestHandleFHIRRedirectError(t *testing.T) {
-	s := &Server{AuthorizedFHIRURL: "https://fhir.com"}
+	s := &Server{authorizedFHIRURL: "https://fhir.com"}
 	tests := []struct {
 		name, queryParameters string
 		existingSession       map[string]string
 		expectedHTTPStatus    int
 	}{
-		/*{
+		{
 			name:               "missing fhirURL in session",
 			queryParameters:    "",
 			expectedHTTPStatus: http.StatusUnauthorized,
@@ -175,10 +164,10 @@ func TestHandleFHIRRedirectError(t *testing.T) {
 			existingSession:    map[string]string{"fhirURL": "https://fhir.com"},
 			queryParameters:    "",
 			expectedHTTPStatus: http.StatusUnauthorized,
-		},*/
+		},
 		{
 			name:               "missing code in request",
-			existingSession:    map[string]string{"fhirURL": "https://fhir.com", "launchID": "123"},
+			existingSession:    map[string]string{fhirURLSessionKey: "https://fhir.com", launchIDSessionKey: "123"},
 			queryParameters:    "",
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
@@ -186,21 +175,19 @@ func TestHandleFHIRRedirectError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := context.Background()
+			s = defaultServer("https://fhir.com")
 			req, err := http.NewRequest("GET", "?"+test.queryParameters, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if test.existingSession != nil {
-				existingSess, err := session.Start(ctx, httptest.NewRecorder(), req)
+				existingSess, err := session.New(s.sm, httptest.NewRecorder(), req)
 				if err != nil {
 					t.Fatal(err)
 				}
 				for k, v := range test.existingSession {
-					existingSess.Set(k, v)
+					existingSess.Put(k, v)
 				}
-				fmt.Printf("existing session %v", existingSess)
-
 			}
 
 			rr := httptest.NewRecorder()

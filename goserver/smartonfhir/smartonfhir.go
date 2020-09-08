@@ -3,7 +3,6 @@ package smartonfhir
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"net/http"
 
@@ -16,13 +15,23 @@ const (
 	tokenURLKey     = "token_endpoint"
 )
 
-var fhirScopes = []string{"openid", "fhirUser", "profile", "launch", "launch/patient", "launch/encounter"}
+// Config contains configuration information for smartonfhir authentication flow.
+type Config struct {
+	fhirClientID, fhirRedirectURL string
+	fhirScopes                    []string
+}
 
-var FHIRClientID = flag.String("fhir_client_id", "", "Smart on FHIR client id")
-var FHIRRedirectURL = flag.String("fhir_redirect_url", "", "Smart on FHIR redirect URL")
+// NewConfig creates and returns a new Config.
+func NewConfig(fhirClientID, fhirRedirectURL string, fhirScopes []string) *Config {
+	return &Config{fhirClientID: fhirClientID, fhirRedirectURL: fhirRedirectURL, fhirScopes: fhirScopes}
+}
 
-func GetFHIRAuthURL(fhirURL, launchID, state string) (string, error) {
-	config, err := gerFHIROAuthConfig(fhirURL)
+// AuthCodeURL returns a URL to the FHIR server's consent page
+// that asks for permissions for the scopes specified in Config.
+// State is a token to protect the user from CSRF attacks and must
+// be provided.
+func (c *Config) AuthCodeURL(fhirURL, launchID, state string) (string, error) {
+	config, err := c.authConfig(fhirURL)
 	if err != nil {
 		return "", err
 	}
@@ -30,16 +39,17 @@ func GetFHIRAuthURL(fhirURL, launchID, state string) (string, error) {
 	return config.AuthCodeURL(state, oauth2.SetAuthURLParam("aud", fhirURL), oauth2.SetAuthURLParam("launch", launchID)), nil
 }
 
-func GetFHIRAuthToken(ctx context.Context, fhirURL, code string) (*oauth2.Token, error) {
-	config, err := gerFHIROAuthConfig(fhirURL)
+// Exchange exchanges an authorization code for a token.
+func (c *Config) Exchange(ctx context.Context, fhirURL, code string) (*oauth2.Token, error) {
+	config, err := c.authConfig(fhirURL)
 	if err != nil {
 		return nil, err
 	}
 
-	return config.Exchange(ctx, code, oauth2.SetAuthURLParam("client_id", *FHIRClientID))
+	return config.Exchange(ctx, code, oauth2.SetAuthURLParam("client_id", c.fhirClientID))
 }
 
-func gerFHIROAuthConfig(fhirURL string) (*oauth2.Config, error) {
+func (c *Config) authConfig(fhirURL string) (*oauth2.Config, error) {
 	resp, err := http.Get(fhirURL + smartConfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("error")
@@ -49,5 +59,5 @@ func gerFHIROAuthConfig(fhirURL string) (*oauth2.Config, error) {
 		return nil, err
 	}
 
-	return &oauth2.Config{ClientID: *FHIRClientID, Endpoint: oauth2.Endpoint{AuthURL: dat[authURLKey].(string), TokenURL: dat[tokenURLKey].(string)}, RedirectURL: *FHIRRedirectURL, Scopes: fhirScopes}, nil
+	return &oauth2.Config{ClientID: c.fhirClientID, Endpoint: oauth2.Endpoint{AuthURL: dat[authURLKey].(string), TokenURL: dat[tokenURLKey].(string)}, RedirectURL: c.fhirRedirectURL, Scopes: c.fhirScopes}, nil
 }
