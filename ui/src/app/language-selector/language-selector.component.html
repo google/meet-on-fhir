@@ -1,0 +1,14 @@
+<mat-card>
+  <h3>Select your language</h3>
+  <mat-selection-list #language [multiple]="false">
+    <mat-list-option *ngFor="let language of supportedLanguages" [value]="language"
+      [selected]="language == defaultLanguage">
+      {{language}}
+    </mat-list-option>
+  </mat-selection-list>
+
+  <div class="actions">
+    <button mat-raised-button color="primary"
+      (click)="setLanguage(language.selectedOptions.selected[0]?.value)">Submit</button>
+  </div>
+</mat-card>

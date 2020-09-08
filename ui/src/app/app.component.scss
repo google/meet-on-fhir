@@ -1,0 +1,67 @@
+$toolbar-height: 96px;
+
+:host {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+}
+
+.toolbar {
+  align-items: center;
+  border-bottom: 1px solid #e8eaed;
+  display: flex;
+  height: $toolbar-height;
+  left: 0;
+  padding: 0 20px;
+  right: 0;
+  top: 0;
+}
+
+.toolbar img {
+  border-right: 1px solid #e8eaed;
+  padding-right: 20px;
+  width: 200px;
+}
+
+.toolbar span {
+  color: #80868b;
+  font-size: 18px;
+  line-height: 24px;
+  padding-left: 20px;
+}
+
+.toolbar .org-info {
+  color: #3c4043;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: right;
+
+  p {
+    margin: 0;
+  }
+}
+
+.spacer {
+  flex: 1;
+}
+
+.content {
+  flex: 1;
+  display: flex;
+}
+
+.footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid #e8eaed;
+  display: flex;
+  height: 40px;
+  justify-content: flex-end;
+}
+
+.footer a {
+  color: #5f6368;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  align-items: center;
+}
