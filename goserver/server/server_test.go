@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/meet-on-fhir/session"
+	"github.com/google/meet-on-fhir/session/sessiontest"
 )
 
 func TestNewServerError(t *testing.T) {
@@ -77,7 +78,7 @@ func TestLaunchHandler_HTTPError(t *testing.T) {
 
 func TestHandleLaunch(t *testing.T) {
 	fhirURL := "https://authorized.fhir.com"
-	sm := session.NewManager(session.NewMemoryStore(), func() string { return "test-session-id" }, 30*time.Minute)
+	sm := session.NewManager(sessiontest.NewMemoryStore(), func() string { return "test-session-id" }, 30*time.Minute)
 	s, err := NewServer(fhirURL, 0, sm)
 	if err != nil {
 		t.Fatalf("NewServer(authorizedFHIRURL, 0, sm) -> %v, nil expected", err)
