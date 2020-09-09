@@ -18,6 +18,7 @@ const calendar = require('./calendar.js');
 const datastore = require('./datastore.js');
 const user = require('./user.js');
 const mllp = require('./mllp.js');
+const fhir = require('./fhir.js');
 
 const settings = require('./settings.json');
 
@@ -88,25 +89,52 @@ app.post('/hangouts', (request, response) => {
 	}).catch(error(response));
 });
 
-app.post('/reportEvent', (request, response) => {
+app.post('/reportEvent', async (request, response) => {
+	const fhirUrl = request.body.fhirUrl;
+	if (!fhirUrl) {
+		response.status(400).send("missing fhirUrl");
+		return;
+	}
+	if (!settings.authorizedFhirUrls.includes(fhirUrl)) {
+		response.status(403).send(`unauthorized fhirUrl ${fhirUrl}`);
+		return;
+	}
+
+	const fhirAccessToken = request.body.fhirAccessToken;
+	if (!fhirAccessToken) {
+		response.status(400).send("missing fhirAccessToken");
+		return;
+	}
+  
 	const type = request.body.type;
 	if (type != 'patient_arrived' && type != 'practitioner_arrived') {
 		response.status(400).send(`Invalid type ${type}`);
 		return;
 	}
+  
 	const encounterId = request.body.encounterId;
 	if (!encounterId) {
 		response.status(400).send('missing encounterId');
 		return;
 	}
+
 	const patientId = request.body.patientId;
 	if (!patientId) {
 		response.status(400).send('missing patientId');
 		return
 	}
+
 	const patientName = request.body.patientName;
 	if (!patientName) {
 		response.status(400).send('missing patientName');
+		return
+	}
+
+	try {
+		await fhir.checkFhirAuthorization(fhirUrl, fhirAccessToken, encounterId);
+	} catch (err) {
+		debugLog('fhir authentication check failed with err ' + err);
+		response.status(403).send('fhir authentication check failed');
 		return
 	}
 	

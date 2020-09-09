@@ -57,7 +57,10 @@ configured to launch as a new window in the SMART on FHIR integration point.
 
 ## EHR writeback configuration
 
-EHR writeback can be enabled/disabled in settings.json.
+EHR writeback can be enabled/disabled in settings.json. An address and a port must be
+provided for the app to establish TCP connection. In addition, a list of authorized FHIR
+server endpoints must also be provided to prevent the feature from being abused - a caller
+must pass an authorized FHIR server endpoint if the request triggers any EHR writeback.
 If enabled, the app will report patient arrived events and appointment status changes
 by sending MLLP-encoded HL7 messages to the specified EHR address and port.
 The running environment must be allowed to establish TCP socket with the EHR server.
