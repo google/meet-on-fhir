@@ -58,7 +58,7 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "cannot create session", http.StatusInternalServerError)
 		return
 	}
-	sess.Set(fhirURLSessionKey, iss[0])
+	sess.FHIRURL = iss[0]
 	s.sm.Save(sess)
 
 	w.WriteHeader(http.StatusOK)

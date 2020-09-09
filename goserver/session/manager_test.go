@@ -10,19 +10,15 @@ import (
 
 func TestManager(t *testing.T) {
 	sessionID := "test-id"
-	m := NewManager(NewMemoryStore(), "session-secret", func() string { return sessionID }, 30*time.Minute)
+	m := NewManager(NewMemoryStore(), func() string { return sessionID }, 30*time.Minute)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("Get", "https://test.com", nil)
-	// test New
+	// Test New
 	sess, err := m.New(rr, req)
 	if err != nil {
 		t.Fatalf("sm.New() -> %v, expect nil", err)
 		return
-	}
-	expectedSess := &Session{ID: sessionID}
-	if !reflect.DeepEqual(sess, expectedSess) {
-		t.Errorf("created session %v does not equal to expected %v", sess, expectedSess)
 	}
 
 	// Check session cookie set in response
@@ -37,37 +33,30 @@ func TestManager(t *testing.T) {
 		t.Fatal("wrong session id set in response cookie")
 	}
 
+	expected := &Session{ID: sess.ID, ExpiresAt: sess.ExpiresAt.Truncate(0)}
 	// Test Retrieve
-	sess, err = m.Retrieve(req)
+	found, err := m.Retrieve(req)
 	if err != nil {
 		t.Fatalf("m.Retrieve() -> %v, expect nil", err)
 		return
 	}
-	if !reflect.DeepEqual(sess, expectedSess) {
-		t.Errorf("found session %v does not equal to expected %v", sess, expectedSess)
+	if !reflect.DeepEqual(found, expected) {
+		t.Errorf("found session %v does not equal to expected %v", found, expected)
 	}
 
 	// test save - override the existing one
-	sess.Set("key", "val")
+	sess.FHIRURL = "url"
 	if err = m.Save(sess); err != nil {
 		t.Fatalf("m.Save() -> %v, expect nil", err)
 		return
 	}
-	expectedSess.Set("key", "val")
-	sess, err = m.Retrieve(req)
+	expected.FHIRURL = "url"
+	found, err = m.Retrieve(req)
 	if err != nil {
 		t.Fatalf("m.Find() -> %v, expect nil", err)
 		return
 	}
-	if !reflect.DeepEqual(sess, expectedSess) {
-		t.Errorf("found session %v does not equal to expected %v", sess, expectedSess)
-	}
-}
-
-func TestManagerSaveNonexistentSessionError(t *testing.T) {
-	m := NewManager(NewMemoryStore(), "session-secret", func() string { return "test-id" }, 30*time.Minute)
-	if err := m.Save(&Session{ID: "test-id"}); err == nil {
-		t.Fatal("m.Save() -> nil, expect error")
-		return
+	if !reflect.DeepEqual(found, expected) {
+		t.Errorf("found session %v does not equal to expected %v", found, expected)
 	}
 }

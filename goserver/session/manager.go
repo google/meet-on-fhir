@@ -1,7 +1,6 @@
 package session
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -23,26 +22,24 @@ type Store interface {
 
 // Manager manages sessions.
 type Manager struct {
-	store               Store
-	sessionCookieSecret string
-	sessionID           func() string
-	sessionDuration     time.Duration
+	store           Store
+	sessionID       func() string
+	sessionDuration time.Duration
 }
 
 // NewManager creates a new Manager using the given Store.
-func NewManager(ss Store, sessionCookieSecret string, sessionID func() string, sessionDuration time.Duration) *Manager {
-	return &Manager{store: ss, sessionCookieSecret: sessionCookieSecret, sessionID: sessionID, sessionDuration: sessionDuration}
+func NewManager(ss Store, sessionID func() string, sessionDuration time.Duration) *Manager {
+	return &Manager{store: ss, sessionID: sessionID, sessionDuration: sessionDuration}
 }
 
 // New creates a new session and set cookie containning the encoded session id in both HTTP
 // request and response.
 func (m *Manager) New(w http.ResponseWriter, r *http.Request) (*Session, error) {
-	expireAt := time.Now().Add(m.sessionDuration)
-	s, err := m.create(expireAt)
+	s, err := m.create()
 	if err != nil {
 		return nil, err
 	}
-	cookie := &http.Cookie{Name: sessionCookieName, Value: s.ID, Expires: expireAt}
+	cookie := &http.Cookie{Name: sessionCookieName, Value: s.ID, Expires: s.ExpiresAt}
 	http.SetCookie(w, cookie)
 	r.AddCookie(cookie)
 	return s, nil
@@ -61,29 +58,20 @@ func (m *Manager) Retrieve(r *http.Request) (*Session, error) {
 	return m.find(sid)
 }
 
-// Save saves the Session by overriding the existing one. If no the existing one is found,
-// returns an error.
+// Save saves the Session by overriding the existing one.
 func (m *Manager) Save(session *Session) error {
-	exist, err := m.find(session.ID)
+	b, err := session.Bytes()
 	if err != nil {
 		return err
 	}
-	if exist == nil {
-		return ErrNotFound
-	}
-
-	js, err := json.Marshal(session.Value)
-	if err != nil {
-		return err
-	}
-	return m.store.Store(session.ID, js)
+	return m.store.Store(session.ID, b)
 }
 
 // create creates a new session with the given expiration time.
-func (m *Manager) create(expiresAt time.Time) (*Session, error) {
+func (m *Manager) create() (*Session, error) {
 	id := m.sessionID()
-	sess := &Session{ID: id}
-	if err := m.store.Store(id, nil); err != nil {
+	sess := &Session{ID: id, ExpiresAt: time.Now().Add(m.sessionDuration)}
+	if err := m.Save(sess); err != nil {
 		return nil, err
 	}
 	return sess, nil
@@ -96,14 +84,5 @@ func (m *Manager) find(id string) (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	if v == nil {
-		return nil, ErrNotFound
-	}
-	var val map[string]interface{}
-	if v != nil {
-		if err := json.Unmarshal(v, &val); err != nil {
-			return nil, err
-		}
-	}
-	return &Session{ID: id, Value: val}, nil
+	return FromBytes(v)
 }

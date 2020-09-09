@@ -77,7 +77,7 @@ func TestLaunchHandler_HTTPError(t *testing.T) {
 
 func TestHandleLaunch(t *testing.T) {
 	fhirURL := "https://authorized.fhir.com"
-	sm := session.NewManager(session.NewMemoryStore(), "secret", func() string { return "test-session-id" }, 30*time.Minute)
+	sm := session.NewManager(session.NewMemoryStore(), func() string { return "test-session-id" }, 30*time.Minute)
 	s, err := NewServer(fhirURL, 0, sm)
 	if err != nil {
 		t.Fatalf("NewServer(authorizedFHIRURL, 0, sm) -> %v, nil expected", err)
@@ -85,7 +85,7 @@ func TestHandleLaunch(t *testing.T) {
 	}
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/?iss="+fhirURL, nil)
-	s.handleLaunch(httptest.NewRecorder(), req)
+	s.handleLaunch(rr, req)
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("server.handleLaunch returned wrong status code, got %v, want %v",
 			status, http.StatusOK)
@@ -93,9 +93,9 @@ func TestHandleLaunch(t *testing.T) {
 
 	sess, err := sm.Retrieve(req)
 	if err != nil {
-		t.Fatal("cannot find session")
+		t.Fatalf("cannot find session, got err %v", err)
 	}
-	if sess.Get(fhirURLSessionKey).(string) != fhirURL {
-		t.Fatalf("unexpected fhirURL in session: %s, wanted: %s", sess.Get(fhirURLSessionKey).(string), fhirURL)
+	if sess.FHIRURL != fhirURL {
+		t.Fatalf("unexpected fhirURL in session: %s, wanted: %s", sess.FHIRURL, fhirURL)
 	}
 }

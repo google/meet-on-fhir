@@ -1,27 +1,27 @@
 package session
 
+import (
+	"encoding/json"
+	"time"
+)
+
 // Session stores necessary information for a telehealth session.
 type Session struct {
-	ID    string
-	Value map[string]interface{}
+	ID        string    `json:"id"`
+	FHIRURL   string    `json:"fhir_url"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
-// Set sets the value for a key.
-func (s *Session) Set(key string, val interface{}) {
-	if s.Value == nil {
-		s.Value = make(map[string]interface{})
-	}
-	s.Value[key] = val
+// Bytes converts the session to JSON bytes.
+func (s *Session) Bytes() ([]byte, error) {
+	return json.Marshal(s)
 }
 
-// Get returns the value for the given key.
-func (s *Session) Get(key string) interface{} {
-	if s.Value == nil {
-		return nil
+// FromBytes constructs a Session with the given JSON bytes.
+func FromBytes(data []byte) (*Session, error) {
+	s := &Session{}
+	if err := json.Unmarshal(data, s); err != nil {
+		return nil, err
 	}
-	v, ok := s.Value[key]
-	if !ok {
-		return nil
-	}
-	return v
+	return s, nil
 }
