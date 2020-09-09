@@ -32,8 +32,7 @@ func NewManager(ss Store, sessionID func() string, sessionDuration time.Duration
 	return &Manager{store: ss, sessionID: sessionID, sessionDuration: sessionDuration}
 }
 
-// New creates a new session and set cookie containning the encoded session id in both HTTP
-// request and response.
+// New creates a new session and set session cookie in both HTTP request and response.
 func (m *Manager) New(w http.ResponseWriter, r *http.Request) (*Session, error) {
 	s, err := m.create()
 	if err != nil {
@@ -58,7 +57,7 @@ func (m *Manager) Retrieve(r *http.Request) (*Session, error) {
 	return m.find(sid)
 }
 
-// Save saves the Session by overriding the existing one.
+// Save saves the Session by either creating a new one or overriding the existing one.
 func (m *Manager) Save(session *Session) error {
 	b, err := session.Bytes()
 	if err != nil {
@@ -67,7 +66,7 @@ func (m *Manager) Save(session *Session) error {
 	return m.store.Store(session.ID, b)
 }
 
-// create creates a new session with the given expiration time.
+// create creates a new session and stores in Store.
 func (m *Manager) create() (*Session, error) {
 	id := m.sessionID()
 	sess := &Session{ID: id, ExpiresAt: time.Now().Add(m.sessionDuration)}
@@ -77,8 +76,7 @@ func (m *Manager) create() (*Session, error) {
 	return sess, nil
 }
 
-// find finds and returns the Session whose id mathces the given one.
-// Returns error if no matching Sessions are found.
+// find returns a matching Session in Store based on the id.
 func (m *Manager) find(id string) (*Session, error) {
 	v, err := m.store.Retrieve(id)
 	if err != nil {
