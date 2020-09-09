@@ -1,4 +1,11 @@
-package session
+package sessiontest
+
+import (
+	"errors"
+)
+
+// ErrNotFound is the error returned when something is not found.
+var ErrNotFound = errors.New("not found")
 
 // MemoryStore is an in-memory implementaion of Store.
 // It is not thread-safe and should be used by tests only.

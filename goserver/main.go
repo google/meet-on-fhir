@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/meet-on-fhir/server"
 	"github.com/google/meet-on-fhir/session"
+	"github.com/google/meet-on-fhir/session/sessiontest"
 	"github.com/google/uuid"
 )
 
@@ -31,7 +32,7 @@ func main() {
 	server, err := server.NewServer(*authorizedFhirURL, *httpServerPort, nil, sc)
 =======
 	// TODO: Use a session manage for producation use.
-	sm := session.NewManager(session.NewMemoryStore(), func() string { return uuid.New().String() }, *sessionDuration)
+	sm := session.NewManager(sessiontest.NewMemoryStore(), func() string { return uuid.New().String() }, *sessionDuration)
 	server, err := server.NewServer(*authorizedFhirURL, *httpServerPort, sm)
 >>>>>>> server-session
 	if err != nil {
@@ -40,7 +41,6 @@ func main() {
 	}
 	if err := server.Run(); err != nil {
 		log.Fatal(err)
-		log.Fatalf(format, v)
 		return
 	}
 }

@@ -52,7 +52,10 @@ func (c *Config) Exchange(ctx context.Context, fhirURL, code string) (*oauth2.To
 func (c *Config) authConfig(fhirURL string) (*oauth2.Config, error) {
 	resp, err := http.Get(fhirURL + smartConfigPath)
 	if err != nil {
-		return nil, fmt.Errorf("error")
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("got response code %d when fetching smart configuration", resp.StatusCode)
 	}
 	var dat map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&dat); err != nil {

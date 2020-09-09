@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/meet-on-fhir/session"
+	"github.com/google/meet-on-fhir/session/sessiontest"
 	"github.com/google/meet-on-fhir/smartonfhir"
+	"github.com/google/meet-on-fhir/smartonfhir/smartonfhirtest"
 )
 
 var (
@@ -22,16 +23,8 @@ var (
 	testScopes          = []string{"launch", "profile"}
 )
 
-func setupFHIRServer(authURL, tokenURL string) string {
-	fhirServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		w.Write([]byte(fmt.Sprintf("{\"authorization_endpoint\": \"%s\", \"token_endpoint\": \"%s\"}", authURL, tokenURL)))
-	}))
-	return fhirServer.URL
-}
-
 func defaultServer(fhirURL string) *Server {
-	sm := session.NewManager(session.NewMemoryStore(), func() string { return "test-session-id" }, 30*time.Minute)
+	sm := session.NewManager(sessiontest.NewMemoryStore(), func() string { return "test-session-id" }, 30*time.Minute)
 	sc := smartonfhir.NewConfig(testFHIRClientID, testFHIRRedirectURL, testScopes)
 	s, _ := NewServer(fhirURL, 0, sm, sc)
 	return s
@@ -99,7 +92,7 @@ func TestLaunchHandler_HTTPError(t *testing.T) {
 }
 
 func TestLaunchHandler(t *testing.T) {
-	fhirURL := setupFHIRServer(testFHIRAuthURL, testFHIRTokenURL)
+	fhirURL := smartonfhirtest.SetupFHIRServer(testFHIRAuthURL, testFHIRTokenURL)
 	s := defaultServer(fhirURL)
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/?launch=%s&iss=%s", testLaunchID, fhirURL), nil)
@@ -121,31 +114,8 @@ func TestLaunchHandler(t *testing.T) {
 		t.Errorf("invalid launchID in session, got %s, exp %s", sess.LaunchID, testLaunchID)
 	}
 
-	redirectURL := rr.Header().Get("Location")
-	if !strings.HasPrefix(redirectURL, testFHIRAuthURL) {
-		t.Errorf("redirect URL %s does not start with %s", redirectURL, testFHIRAuthURL)
-	}
-	if !strings.Contains(redirectURL, "response_type=code") {
-		t.Errorf("redirect URL %s does not contain response_type=code", redirectURL)
-	}
-	if !strings.Contains(redirectURL, fmt.Sprintf("client_id=%s", testFHIRClientID)) {
-		t.Errorf("redirect URL %s does not contain client_id=%s", redirectURL, testFHIRClientID)
-	}
-	if !strings.Contains(redirectURL, fmt.Sprintf("redirect_uri=%s", url.QueryEscape(testFHIRRedirectURL))) {
-		t.Errorf("redirect URL %s does not contain redirect_uri=%s", redirectURL, url.QueryEscape(testFHIRRedirectURL))
-	}
-	if !strings.Contains(redirectURL, fmt.Sprintf("launch=%s", testLaunchID)) {
-		t.Errorf("redirect URL %s does not contain launch=%s", redirectURL, testLaunchID)
-	}
-	if !strings.Contains(redirectURL, fmt.Sprintf("scope=%s", strings.Join(testScopes, "+"))) {
-		t.Errorf("redirect URL %s does not contain scope=%s", redirectURL, strings.Join(testScopes, "+"))
-	}
-	if !strings.Contains(redirectURL, fmt.Sprintf("state=%s", sess.ID)) {
-		t.Errorf("redirect URL %s does not contain state=%s", redirectURL, sess.ID)
-	}
-	if !strings.Contains(redirectURL, fmt.Sprintf("aud=%s", url.QueryEscape(fhirURL))) {
-		t.Errorf("redirect URL %s does not contain aud=%s", redirectURL, url.QueryEscape(fhirURL))
-	}
+	authURL := rr.Header().Get("Location")
+	smartonfhirtest.ValidateAuthURL(t, authURL, testFHIRAuthURL, testFHIRClientID, testFHIRRedirectURL, testLaunchID, sess.ID, fhirURL, testScopes)
 }
 
 func TestHandleFHIRRedirectError(t *testing.T) {

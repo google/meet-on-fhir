@@ -1,16 +1,12 @@
 package session
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
 )
 
 const sessionCookieName = "session"
-
-// ErrNotFound is the error returned when something is not found.
-var ErrNotFound = errors.New("not found")
 
 // Store provides functions to store/retrieve keyed binary data.
 type Store interface {
