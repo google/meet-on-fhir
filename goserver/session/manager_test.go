@@ -6,11 +6,13 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/meet-on-fhir/session/sessiontest"
 )
 
 func TestManager(t *testing.T) {
 	sessionID := "test-id"
-	m := NewManager(NewMemoryStore(), func() string { return sessionID }, 30*time.Minute)
+	m := NewManager(sessiontest.NewMemoryStore(), func() string { return sessionID }, 30*time.Minute)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("Get", "https://test.com", nil)

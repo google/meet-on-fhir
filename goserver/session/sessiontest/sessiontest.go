@@ -1,4 +1,4 @@
-package session
+package sessiontest
 
 // MemoryStore is an in-memory implementaion of Store.
 // It is not thread-safe and should be used by tests only.

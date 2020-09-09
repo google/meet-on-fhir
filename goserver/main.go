@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/meet-on-fhir/server"
 	"github.com/google/meet-on-fhir/session"
+	"github.com/google/meet-on-fhir/session/sessiontest"
 	"github.com/google/uuid"
 )
 
@@ -18,7 +19,7 @@ var httpServerPort = flag.Int("http_server_port", 8080, "The port to start the s
 func main() {
 	flag.Parse()
 	// TODO: Use a session manage for producation use.
-	sm := session.NewManager(session.NewMemoryStore(), func() string { return uuid.New().String() }, *sessionDuration)
+	sm := session.NewManager(sessiontest.NewMemoryStore(), func() string { return uuid.New().String() }, *sessionDuration)
 	server, err := server.NewServer(*authorizedFhirURL, *httpServerPort, sm)
 	if err != nil {
 		log.Fatal(err)
