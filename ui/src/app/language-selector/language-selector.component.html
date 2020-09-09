@@ -1,9 +1,9 @@
 <mat-card>
-  <h3>Select your language</h3>
+  <h3>{{languages.stringAssets.languageSelect}}</h3>
   <mat-selection-list #language [multiple]="false">
-    <mat-list-option *ngFor="let language of supportedLanguages" [value]="language"
-      [selected]="language == defaultLanguage">
-      {{language}}
+    <mat-list-option *ngFor="let language of supportedLanguages" [value]="language[0]"
+      [selected]="language[0] == defaultLanguage">
+      {{language[1]}}
     </mat-list-option>
   </mat-selection-list>
 
