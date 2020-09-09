@@ -30,13 +30,13 @@ type Server struct {
 	// The port the HTTP server runs on.
 	port int
 	// sm is the session manager of the server.
-	sm *session.StoreManager
+	sm *session.Manager
 	// sc is the configuration for SmartOnFhir.
 	sc *smartonfhir.Config
 }
 
 // NewServer creates and returns a new server.
-func NewServer(authorizedFHIRURL string, port int, sm *session.StoreManager, sc *smartonfhir.Config) (*Server, error) {
+func NewServer(authorizedFHIRURL string, port int, sm *session.Manager, sc *smartonfhir.Config) (*Server, error) {
 	if authorizedFHIRURL == "" {
 		return nil, fmt.Errorf(authorizedFHIRURLNotProvidedErrorMsg)
 	}
@@ -68,7 +68,7 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sess, err := session.New(s.sm, w, r)
+	sess, err := s.sm.New(w, r)
 	if err != nil {
 		http.Error(w, "cannot create session", http.StatusInternalServerError)
 		return
@@ -81,8 +81,8 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sess.Put(fhirURLSessionKey, fhirURL)
-	sess.Put(launchIDSessionKey, launchID)
+	sess.FHIRURL = fhirURL
+	sess.LaunchID = launchID
 	if err := s.sm.Save(sess); err != nil {
 		http.Error(w, "cannot create session", http.StatusInternalServerError)
 		return
@@ -92,17 +92,17 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleFHIRRedirect(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
-	sess, err := session.Find(s.sm, r)
+	sess, err := s.sm.Retrieve(r)
 	if err != nil {
 		http.Error(w, "invalid session", http.StatusUnauthorized)
 		return
 	}
-	fhirURL := sess.GetStringOrEmpty(fhirURLSessionKey)
+	fhirURL := sess.FHIRURL
 	if fhirURL == "" {
 		http.Error(w, "invalid session: missing fhirURL", http.StatusUnauthorized)
 		return
 	}
-	launchID := sess.GetStringOrEmpty(launchIDSessionKey)
+	launchID := sess.LaunchID
 	if launchID == "" {
 		http.Error(w, "invalid session: missing launchID", http.StatusUnauthorized)
 		return

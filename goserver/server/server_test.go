@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/meet-on-fhir/session"
 	"github.com/google/meet-on-fhir/smartonfhir"
@@ -30,7 +31,7 @@ func setupFHIRServer(authURL, tokenURL string) string {
 }
 
 func defaultServer(fhirURL string) *Server {
-	sm := session.NewStoreManager(session.NewMemoryStore(), func() string { return "test-session-id" })
+	sm := session.NewManager(session.NewMemoryStore(), func() string { return "test-session-id" }, 30*time.Minute)
 	sc := smartonfhir.NewConfig(testFHIRClientID, testFHIRRedirectURL, testScopes)
 	s, _ := NewServer(fhirURL, 0, sm, sc)
 	return s
@@ -109,15 +110,15 @@ func TestLaunchHandler(t *testing.T) {
 	}
 
 	// Make sure session is created and contains expected values.
-	sess, err := session.Find(s.sm, req)
+	sess, err := s.sm.Retrieve(req)
 	if err != nil {
 		t.Fatalf("cannot find session in either request or store, got err %v", err)
 	}
-	if v := sess.Get(fhirURLSessionKey).(string); v != fhirURL {
-		t.Errorf("invalid fhirURL in session, got %v, exp %s", v, fhirURL)
+	if sess.FHIRURL != fhirURL {
+		t.Errorf("invalid fhirURL in session, got %s, exp %s", sess.FHIRURL, fhirURL)
 	}
-	if v := sess.Get(launchIDSessionKey).(string); v != testLaunchID {
-		t.Errorf("invalid launchID in session, got %v, exp %s", v, testLaunchID)
+	if sess.LaunchID != testLaunchID {
+		t.Errorf("invalid launchID in session, got %s, exp %s", sess.LaunchID, testLaunchID)
 	}
 
 	redirectURL := rr.Header().Get("Location")
@@ -148,45 +149,54 @@ func TestLaunchHandler(t *testing.T) {
 }
 
 func TestHandleFHIRRedirectError(t *testing.T) {
-	s := &Server{authorizedFHIRURL: "https://fhir.com"}
+	fhirURL := "https://fhir.com"
+	s := &Server{authorizedFHIRURL: fhirURL}
 	tests := []struct {
-		name, queryParameters string
-		existingSession       map[string]string
-		expectedHTTPStatus    int
+		name, queryParameters           string
+		sessionFHIRURL, sessionLaunchID string
+		expectedHTTPStatus              int
 	}{
 		{
+			name:               "missing session",
+			queryParameters:    "code=456",
+			expectedHTTPStatus: http.StatusUnauthorized,
+		},
+		{
 			name:               "missing fhirURL in session",
-			queryParameters:    "",
+			sessionLaunchID:    "123",
+			queryParameters:    "code=456",
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
 		{
 			name:               "missing launchID in session",
-			existingSession:    map[string]string{"fhirURL": "https://fhir.com"},
-			queryParameters:    "",
+			sessionFHIRURL:     fhirURL,
+			queryParameters:    "code=456",
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
 		{
 			name:               "missing code in request",
-			existingSession:    map[string]string{fhirURLSessionKey: "https://fhir.com", launchIDSessionKey: "123"},
-			queryParameters:    "",
-			expectedHTTPStatus: http.StatusUnauthorized,
+			sessionFHIRURL:     fhirURL,
+			sessionLaunchID:    "123",
+			expectedHTTPStatus: http.StatusBadRequest,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			s = defaultServer("https://fhir.com")
+			s = defaultServer(fhirURL)
 			req, err := http.NewRequest("GET", "?"+test.queryParameters, nil)
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("http.NewRequest() -> %v, nil expected", err)
 			}
-			if test.existingSession != nil {
-				existingSess, err := session.New(s.sm, httptest.NewRecorder(), req)
+			if test.sessionFHIRURL != "" || test.sessionLaunchID != "" {
+				sess, err := s.sm.New(httptest.NewRecorder(), req)
 				if err != nil {
 					t.Fatal(err)
 				}
-				for k, v := range test.existingSession {
-					existingSess.Put(k, v)
+				sess.FHIRURL = test.sessionFHIRURL
+				sess.LaunchID = test.sessionLaunchID
+				if err = s.sm.Save(sess); err != nil {
+					t.Fatalf("s.sm.Save() -> %v, nil expected", err)
 				}
 			}
 
