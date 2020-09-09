@@ -23,11 +23,11 @@ type Server struct {
 	// The port the HTTP server runs on.
 	port int
 	// sm is the session manager of the server.
-	sm *session.StoreManager
+	sm *session.Manager
 }
 
 // NewServer creates and returns a new server.
-func NewServer(authorizedFHIRURL string, port int, sm *session.StoreManager) (*Server, error) {
+func NewServer(authorizedFHIRURL string, port int, sm *session.Manager) (*Server, error) {
 	if authorizedFHIRURL == "" {
 		return nil, fmt.Errorf(authorizedFHIRURLNotProvidedErrorMsg)
 	}
@@ -53,12 +53,12 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sess, err := session.New(s.sm, w, r)
+	sess, err := s.sm.New(w, r)
 	if err != nil {
-		http.Error(w, "cannot create session", http.StatusBadRequest)
+		http.Error(w, "cannot create session", http.StatusInternalServerError)
 		return
 	}
-	sess.Put(fhirURLSessionKey, iss[0])
+	sess.Set(fhirURLSessionKey, iss[0])
 	s.sm.Save(sess)
 
 	w.WriteHeader(http.StatusOK)

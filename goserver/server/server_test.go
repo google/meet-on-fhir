@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/meet-on-fhir/session"
 )
@@ -76,7 +77,7 @@ func TestLaunchHandler_HTTPError(t *testing.T) {
 
 func TestHandleLaunch(t *testing.T) {
 	fhirURL := "https://authorized.fhir.com"
-	sm := session.NewStoreManager(session.NewMemoryStore(), func() string { return "test-session-id" })
+	sm := session.NewManager(session.NewMemoryStore(), "secret", func() string { return "test-session-id" }, 30*time.Minute)
 	s, err := NewServer(fhirURL, 0, sm)
 	if err != nil {
 		t.Fatalf("NewServer(authorizedFHIRURL, 0, sm) -> %v, nil expected", err)
@@ -90,7 +91,7 @@ func TestHandleLaunch(t *testing.T) {
 			status, http.StatusOK)
 	}
 
-	sess, err := session.Find(sm, req)
+	sess, err := sm.Retrieve(req)
 	if err != nil {
 		t.Fatal("cannot find session")
 	}
