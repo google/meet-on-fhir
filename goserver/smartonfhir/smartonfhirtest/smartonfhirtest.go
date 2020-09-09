@@ -15,11 +15,11 @@ import (
 func StartFHIRServer(configPath, authBaseURL, tokenURL string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == configPath {
-			w.WriteHeader(200)
+			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(fmt.Sprintf("{\"authorization_endpoint\": \"%s\", \"token_endpoint\": \"%s\"}", authBaseURL, tokenURL)))
 			return
 		}
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusNotFound)
 		return
 	}))
 }
@@ -30,7 +30,6 @@ func StartFHIRServer(configPath, authBaseURL, tokenURL string) *httptest.Server 
 func StartFHIRTokenServer(code, redirectURI, clientID, token string) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.FormValue("grant_type") != "authorization_code" || r.FormValue("code") != code || r.FormValue("redirect_uri") != redirectURI || r.FormValue("client_id") != clientID {
-			fmt.Printf("Here 1")
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
