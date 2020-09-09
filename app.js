@@ -96,7 +96,7 @@ app.post('/reportEvent', async (request, response) => {
 		return;
 	}
 	if (!settings.authorizedFhirUrls.includes(fhirUrl)) {
-		response.status(401).send(`unauthorized fhirUrl ${fhirUrl}`);
+		response.status(403).send(`unauthorized fhirUrl ${fhirUrl}`);
 		return;
 	}
 
