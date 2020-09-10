@@ -1,14 +1,12 @@
-/*
-Package smartonfhir provides functions for SmartOnFhir flow base on
-http://www.hl7.org/fhir/smart-app-launch/.
-
-The caller should construct a config and redirect the user to the URL returned by config.AuthCodeURL().
-The user will then authenticate there and an HTTP POST request will be sent to Config.fhirRedirectURL
-with a JSON body containing authenticaion code and state e.g., {"code": "foo", "state": "bar"}.
-The server should ensure the returned state equals to the state passed in AuthCodeURL() to prevent
-CSRF attacks and then call config.Exchange() using the returned code to exchange for an access token.
-The token can then be used to send requests to access the user's FHIR resources.
-*/
+// Package smartonfhir implements functions for SmartOnFhir protocol base on
+// http://www.hl7.org/fhir/smart-app-launch/.
+//
+// The caller should construct a config and redirect the user to the URL returned by config.AuthCodeURL().
+// The user will then authenticate there and an HTTP POST request will be sent to Config.fhirRedirectURL
+// with a JSON body containing authenticaion code and state e.g., {"code": "foo", "state": "bar"}.
+// The server should ensure the returned state equals to the state passed in AuthCodeURL() to prevent
+// CSRF attacks and then call config.Exchange() using the returned code to exchange for an access token.
+// The token can then be used to send requests to access the user's FHIR resources.
 package smartonfhir
 
 import (

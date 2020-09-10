@@ -1,3 +1,4 @@
+// Package smartonfhirtest provides untilities for smartonfhir testing.
 package smartonfhirtest
 
 import (
