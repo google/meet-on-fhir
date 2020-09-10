@@ -1,3 +1,5 @@
+// Package smartonfhir provides functions for SmartOnFhir flow base on
+// http://www.hl7.org/fhir/smart-app-launch/.
 package smartonfhir
 
 import (
@@ -5,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"golang.org/x/oauth2"
 )
@@ -50,7 +53,12 @@ func (c *Config) Exchange(ctx context.Context, fhirURL, code string) (*oauth2.To
 }
 
 func (c *Config) authConfig(fhirURL string) (*oauth2.Config, error) {
-	resp, err := http.Get(fhirURL + smartConfigPath)
+	rURL, err := url.Parse(fhirURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse fhirURL %s", fhirURL)
+	}
+	rURL.Path = smartConfigPath
+	resp, err := http.Get(rURL.String())
 	if err != nil {
 		return nil, err
 	}
@@ -62,5 +70,13 @@ func (c *Config) authConfig(fhirURL string) (*oauth2.Config, error) {
 		return nil, err
 	}
 
-	return &oauth2.Config{ClientID: c.fhirClientID, Endpoint: oauth2.Endpoint{AuthURL: dat[authURLKey].(string), TokenURL: dat[tokenURLKey].(string)}, RedirectURL: c.fhirRedirectURL, Scopes: c.fhirScopes}, nil
+	authURL, ok := dat[authURLKey].(string)
+	if !ok {
+		return nil, fmt.Errorf("no authorization_endpoint found in smart configuration")
+	}
+	tokenURL, ok := dat[tokenURLKey].(string)
+	if !ok {
+		return nil, fmt.Errorf("no token_endpoint found in smart configuration")
+	}
+	return &oauth2.Config{ClientID: c.fhirClientID, Endpoint: oauth2.Endpoint{AuthURL: authURL, TokenURL: tokenURL}, RedirectURL: c.fhirRedirectURL, Scopes: c.fhirScopes}, nil
 }

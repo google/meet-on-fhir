@@ -44,7 +44,7 @@ func StartFHIRTokenServer(code, redirectURI, clientID, token string) *httptest.S
 // given ones.
 func ValidateAuthURL(t *testing.T, authURL *url.URL, host, clientID, redirectURL, launchID, state, aud string, scopes []string) {
 	if authURL.Host != host {
-		t.Errorf("hohst does not match, got %s, expected %s", authURL.Host, host)
+		t.Errorf("host does not match, got %s, expected %s", authURL.Host, host)
 	}
 	if authURL.Query().Get("response_type") != "code" {
 		t.Errorf("response_type does not match, got %s, expected code", authURL.Query().Get("response_type"))

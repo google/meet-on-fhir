@@ -53,3 +53,40 @@ func TestExchange(t *testing.T) {
 		t.Errorf("returned token %s does not equal to expected %s", token.AccessToken, testToken)
 	}
 }
+
+func TestExchangeError(t *testing.T) {
+	ts := smartonfhirtest.StartFHIRTokenServer(testAuthCode, testFHIRRedirectURL, testFHIRClientID, testToken)
+	fs := smartonfhirtest.StartFHIRServer(smartConfigPath, testFHIRAuthURL, ts.URL)
+	defer func() {
+		ts.Close()
+		fs.Close()
+	}()
+
+	tests := []struct {
+		name, clientID, redirectURL string
+		scopes                      []string
+	}{
+		{
+			name:        "client id does not match",
+			clientID:    "wrong id",
+			redirectURL: testFHIRRedirectURL,
+			scopes:      testScopes,
+		},
+		{
+			name:        "redirectURL does not match",
+			clientID:    testFHIRClientID,
+			redirectURL: "wrong redirect URL",
+			scopes:      testScopes,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			config := NewConfig(test.clientID, test.redirectURL, test.scopes)
+			_, err := config.Exchange(context.Background(), fs.URL, testAuthCode)
+			if err == nil {
+				t.Fatalf("config.Exchange() -> nil, error expected")
+			}
+		})
+	}
+}
