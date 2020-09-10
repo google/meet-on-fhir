@@ -6,7 +6,8 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
-	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 // StartFHIRServer starts and returns a server that handles requests sent on
@@ -40,31 +41,29 @@ func StartFHIRTokenServer(code, redirectURI, clientID, token string) *httptest.S
 	}))
 }
 
-// ValidateAuthURL validate an authURL by making sure its host and query parameters match the
-// given ones.
-func ValidateAuthURL(t *testing.T, authURL *url.URL, host, clientID, redirectURL, launchID, state, aud string, scopes []string) {
-	if authURL.Host != host {
-		t.Errorf("host does not match, got %s, expected %s", authURL.Host, host)
+// AuthURL returns a FHIR authentication URL with all required query parameters.
+func AuthURL(host, clientID, redirectURI, launch, state, aud string, scopes []string) (*url.URL, error) {
+	aURL, err := url.Parse(host)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse URL from host %s", host)
 	}
-	if authURL.Query().Get("response_type") != "code" {
-		t.Errorf("response_type does not match, got %s, expected code", authURL.Query().Get("response_type"))
-	}
-	if authURL.Query().Get("client_id") != clientID {
-		t.Errorf("response_type does not match, got %s, expected %s", authURL.Query().Get("client_id"), clientID)
-	}
-	if authURL.Query().Get("redirect_uri") != redirectURL {
-		t.Errorf("redirect_uri does not match, got %s, expected %s", authURL.Query().Get("redirect_uri"), redirectURL)
-	}
-	if authURL.Query().Get("launch") != launchID {
-		t.Errorf("launch does not match, got %s, expected %s", authURL.Query().Get("launch"), launchID)
-	}
-	if authURL.Query().Get("scope") != strings.Join(scopes, " ") {
-		t.Errorf("scope does not match, got %s, expected %s", authURL.Query().Get("scope"), strings.Join(scopes, "+"))
-	}
-	if authURL.Query().Get("state") != state {
-		t.Errorf("state does not match, got %s, expected %s", authURL.Query().Get("state"), state)
-	}
-	if authURL.Query().Get("aud") != aud {
-		t.Errorf("aud does not match, got %s, expected %s", authURL.Query().Get("aud"), aud)
-	}
+	aURL.RawQuery = fmt.Sprintf("response_type=code&client_id=%s&redirect_uri=%s&launch=%s&state=%s&aud=%s&scope=%s", clientID, redirectURI, launch, state, aud, strings.Join(scopes, "+"))
+	return aURL, nil
+}
+
+// DiffAuthURLs compares two URLs and return their diff. Returns empty string if equivalent.
+func DiffAuthURLs(actual, expected *url.URL) string {
+	op := cmp.Comparer(func(a, b *url.URL) bool {
+		if a.Scheme != b.Scheme {
+			return false
+		}
+		if a.Host != b.Host {
+			return false
+		}
+		if !cmp.Equal(a.Query(), b.Query()) {
+			return false
+		}
+		return true
+	})
+	return cmp.Diff(actual, expected, op)
 }

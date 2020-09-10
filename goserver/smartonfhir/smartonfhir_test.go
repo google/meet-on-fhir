@@ -9,16 +9,15 @@ import (
 )
 
 var (
-	testLaunchID            = "123"
-	testFHIRAuthURL         = "https://auth.com"
-	testFHIRAuthURLNoSchema = "auth.com"
-	testFHIRTokenURL        = "https://token.com"
-	testFHIRClientID        = "fhir_client"
-	testFHIRRedirectURL     = "https://redirect.com"
-	testScopes              = []string{"launch", "profile"}
-	testState               = "test-state"
-	testAuthCode            = "auth-code"
-	testToken               = "test-token"
+	testLaunchID        = "123"
+	testFHIRAuthURL     = "https://auth.com"
+	testFHIRTokenURL    = "https://token.com"
+	testFHIRClientID    = "fhir_client"
+	testFHIRRedirectURL = "https://redirect.com"
+	testScopes          = []string{"launch", "profile"}
+	testState           = "test-state"
+	testAuthCode        = "auth-code"
+	testToken           = "test-token"
 )
 
 func TestAuthCodeURL(t *testing.T) {
@@ -29,11 +28,17 @@ func TestAuthCodeURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("config.AuthCodeURL() -> %v, nil expected", err)
 	}
-	url, err := url.Parse(rawurl)
+	actual, err := url.Parse(rawurl)
 	if err != nil {
 		t.Fatalf("url.Parse() -> %v, nil expected", err)
 	}
-	smartonfhirtest.ValidateAuthURL(t, url, testFHIRAuthURLNoSchema, testFHIRClientID, testFHIRRedirectURL, testLaunchID, testState, s.URL, testScopes)
+	expected, err := smartonfhirtest.AuthURL(testFHIRAuthURL, testFHIRClientID, testFHIRRedirectURL, testLaunchID, testState, s.URL, testScopes)
+	if err != nil {
+		t.Fatalf("smartonfhirtest.AuthURL() -> %v, nil expected", err)
+	}
+	if diff := smartonfhirtest.DiffAuthURLs(actual, expected); diff != "" {
+		t.Errorf("actual authentication URL does not equia to expected, diff %s", diff)
+	}
 }
 
 func TestExchange(t *testing.T) {
