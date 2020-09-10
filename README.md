@@ -36,3 +36,25 @@ the launch button.
 If testing locally, first run the server with
 `--authorized_fhir_url=https://r4.smarthealthit.org`
 then use "http://localhost:8080" as the App Launch URL. 
+
+# UI customization
+
+## Change texts (such as patient consent message) in the UI
+All customizable texts are saved in the ui/src/i18n-strings.ts file. If you want to replace a
+displayed text in UI, find the text in the file first and replace it with your preferred text. If
+a field has an array of texts, each text is displayed as a paragraph in the UI.
+
+## Add more supported languages
+We only provide English support out of box. However, we have implemented a simple framework which
+allows you to easily add more languages. Not all languages are supported at the moment (e.g RTL
+languages). Please refer to the LanguageCode enum in ui/src/i18n-helper.ts as the source of truth.
+If you can't find a language in the enum, it means you can't add the language yet.
+
+To add a new language, please follow these steps:
+1. Find the language in LanguageCode and remember the 2-4 letter code (e.g. 'es' for Spanish)
+corresponding to the language. 
+1. Open ui/src/i18n-strings.ts file.
+1. Copy and paste the English entry ('en') and then change 'en' to the 2-4 letters from above.
+1. Replace all strings in the new entry with the correct translated strings.
+
+Once one or more languages are added, users will be presented with a language selector initially.

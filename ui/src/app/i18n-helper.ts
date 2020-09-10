@@ -10,7 +10,7 @@ export interface StringAssets {
 }
 
 /**
- * The list of language code which supported by G Suite. Google meet supports
+ * The list of language code which supported by G Suite. Google Meet supports
  * all of them.
  * See more information at
  * https://developers.google.com/admin-sdk/directory/v1/languages.
