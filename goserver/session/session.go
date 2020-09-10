@@ -1,3 +1,4 @@
+// Package session implements server session.
 package session
 
 import (

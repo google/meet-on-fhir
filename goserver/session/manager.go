@@ -1,3 +1,7 @@
+// Package session implements server session.
+//
+// A Manager should be created for creating/updaing sessions. Manager will store/retrieve session
+// data using the provided Store.
 package session
 
 import (

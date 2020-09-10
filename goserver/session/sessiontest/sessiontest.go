@@ -1,3 +1,4 @@
+// Package sessiontest provides testing utilities for session package.
 package sessiontest
 
 import (
