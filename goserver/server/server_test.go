@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -92,7 +93,8 @@ func TestLaunchHandler_HTTPError(t *testing.T) {
 }
 
 func TestLaunchHandler(t *testing.T) {
-	fhirURL := smartonfhirtest.SetupFHIRServer(testFHIRAuthURL, testFHIRTokenURL)
+	sf := smartonfhirtest.StartFHIRServer("/config", testFHIRAuthURL, testFHIRTokenURL)
+	fhirURL := sf.URL
 	s := defaultServer(fhirURL)
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", fmt.Sprintf("/?launch=%s&iss=%s", testLaunchID, fhirURL), nil)
@@ -114,7 +116,11 @@ func TestLaunchHandler(t *testing.T) {
 		t.Errorf("invalid launchID in session, got %s, exp %s", sess.LaunchID, testLaunchID)
 	}
 
-	authURL := rr.Header().Get("Location")
+	rawurl := rr.Header().Get("Location")
+	authURL, err := url.Parse(rawurl)
+	if err != nil {
+		t.Fatalf("url.Parse() -> %v, nil expected", err)
+	}
 	smartonfhirtest.ValidateAuthURL(t, authURL, testFHIRAuthURL, testFHIRClientID, testFHIRRedirectURL, testLaunchID, sess.ID, fhirURL, testScopes)
 }
 
