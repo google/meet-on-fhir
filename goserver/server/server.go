@@ -1,3 +1,4 @@
+// Package server implements an HTTP server to handle telehealth requests.
 package server
 
 import (
