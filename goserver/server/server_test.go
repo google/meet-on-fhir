@@ -30,7 +30,6 @@ func TestNewServerError(t *testing.T) {
 			}
 			if !strings.Contains(err.Error(), test.expectedMessage) {
 				t.Errorf("expecting error message to contain %s, but got %v", test.expectedMessage, err)
-				return
 			}
 		})
 	}
@@ -63,10 +62,11 @@ func TestLaunchHandler_HTTPError(t *testing.T) {
 			s, err := NewServer("https://authorized.fhir.com", 0, nil)
 			if err != nil {
 				t.Fatalf("NewServer(authorizedFHIRURL, 0, sm) -> %v, nil expected", err)
-				return
 			}
+			handler := http.HandlerFunc(s.handleLaunch)
 			req := httptest.NewRequest("GET", "/?"+test.queryParameters, nil)
 			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, req)
 			s.handleLaunch(rr, req)
 			if status := rr.Code; status != test.expectedHTTPStatus {
 				t.Errorf("server.handleLaunch returned wrong status code: got %v want %v",
@@ -82,11 +82,11 @@ func TestHandleLaunch(t *testing.T) {
 	s, err := NewServer(fhirURL, 0, sm)
 	if err != nil {
 		t.Fatalf("NewServer(authorizedFHIRURL, 0, sm) -> %v, nil expected", err)
-		return
 	}
+	handler := http.HandlerFunc(s.handleLaunch)
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("GET", "/?iss="+fhirURL, nil)
-	s.handleLaunch(rr, req)
+	handler.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("server.handleLaunch returned wrong status code, got %v, want %v",
 			status, http.StatusOK)

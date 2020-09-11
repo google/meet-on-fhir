@@ -42,6 +42,8 @@ func (m *Manager) New(w http.ResponseWriter, r *http.Request) (*Session, error) 
 	// TODO(Issue #21): Figure out whehter signing the session ID in cookie is needed.
 	cookie := &http.Cookie{Name: sessionCookieName, Value: s.ID, Expires: s.ExpiresAt}
 	http.SetCookie(w, cookie)
+	// Add cookie on the incoming request as well to perform like a middleware which
+	// makes it easier to add more request processors relying on sessions.
 	r.AddCookie(cookie)
 	return s, nil
 }
