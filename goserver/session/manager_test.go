@@ -11,8 +11,7 @@ import (
 )
 
 func TestManager(t *testing.T) {
-	sessionID := "test-id"
-	m := NewManager(sessiontest.NewMemoryStore(), func() string { return sessionID }, 30*time.Minute)
+	m := NewManager(sessiontest.NewMemoryStore(), 30*time.Minute)
 
 	rr := httptest.NewRecorder()
 	req := httptest.NewRequest("Get", "https://test.com", nil)
@@ -22,7 +21,6 @@ func TestManager(t *testing.T) {
 		t.Fatalf("sm.New() -> %v, expect nil", err)
 		return
 	}
-
 	// Check session cookie set in response
 	cookies := rr.HeaderMap["Set-Cookie"]
 	if len(cookies) < 1 {

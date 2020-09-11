@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const sessionCookieName = "session"
@@ -23,13 +25,12 @@ type Store interface {
 // Manager manages sessions.
 type Manager struct {
 	store           Store
-	sessionIDFunc   func() string
 	sessionDuration time.Duration
 }
 
 // NewManager creates a new Manager using the given Store.
-func NewManager(ss Store, sessionIDFunc func() string, sessionDuration time.Duration) *Manager {
-	return &Manager{store: ss, sessionIDFunc: sessionIDFunc, sessionDuration: sessionDuration}
+func NewManager(ss Store, sessionDuration time.Duration) *Manager {
+	return &Manager{store: ss, sessionDuration: sessionDuration}
 }
 
 // New creates a new session and set session cookie in both HTTP request and response.
@@ -68,7 +69,7 @@ func (m *Manager) Save(session *Session) error {
 
 // create creates a new session and stores in Store.
 func (m *Manager) create() (*Session, error) {
-	id := m.sessionIDFunc()
+	id := uuid.New().String()
 	sess := &Session{ID: id, ExpiresAt: time.Now().Add(m.sessionDuration)}
 	if err := m.Save(sess); err != nil {
 		return nil, err
