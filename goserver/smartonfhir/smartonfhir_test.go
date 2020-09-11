@@ -23,8 +23,8 @@ var (
 func TestAuthCodeURL(t *testing.T) {
 	s := smartonfhirtest.StartFHIRServer(smartConfigPath, testFHIRAuthURL, testFHIRTokenURL)
 	defer s.Close()
-	config := NewConfig(testFHIRClientID, testFHIRRedirectURL, testScopes)
-	rawurl, err := config.AuthCodeURL(s.URL, testLaunchID, testState)
+	config := NewConfig(testFHIRClientID, s.URL, testFHIRRedirectURL, testScopes)
+	rawurl, err := config.AuthCodeURL(testLaunchID, testState)
 	if err != nil {
 		t.Fatalf("config.AuthCodeURL() -> %v, nil expected", err)
 	}
@@ -49,8 +49,8 @@ func TestExchange(t *testing.T) {
 		fs.Close()
 	}()
 
-	config := NewConfig(testFHIRClientID, testFHIRRedirectURL, testScopes)
-	token, err := config.Exchange(context.Background(), fs.URL, testAuthCode)
+	config := NewConfig(testFHIRClientID, fs.URL, testFHIRRedirectURL, testScopes)
+	token, err := config.Exchange(context.Background(), testAuthCode)
 	if err != nil {
 		t.Fatalf("config.Exchange() -> %v, nil expected", err)
 	}
@@ -87,8 +87,8 @@ func TestExchangeError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			config := NewConfig(test.clientID, test.redirectURL, test.scopes)
-			_, err := config.Exchange(context.Background(), fs.URL, testAuthCode)
+			config := NewConfig(test.clientID, fs.URL, test.redirectURL, test.scopes)
+			_, err := config.Exchange(context.Background(), testAuthCode)
 			if err == nil {
 				t.Fatalf("config.Exchange() -> nil, error expected")
 			}

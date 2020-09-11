@@ -1,12 +1,35 @@
-// Package smartonfhir implements functions for SmartOnFhir protocol base on
-// http://www.hl7.org/fhir/smart-app-launch/.
-//
-// The caller should construct a config and redirect the user to the URL returned by config.AuthCodeURL().
-// The user will then authenticate there and an HTTP POST request will be sent to Config.fhirRedirectURL
-// with a JSON body containing authenticaion code and state e.g., {"code": "foo", "state": "bar"}.
-// The server should ensure the returned state equals to the state passed in AuthCodeURL() to prevent
-// CSRF attacks and then call config.Exchange() using the returned code to exchange for an access token.
-// The token can then be used to send requests to access the user's FHIR resources.
+/*
+Package smartonfhir implements functions for SmartOnFhir protocol base on
+http://www.hl7.org/fhir/smart-app-launch/.
+
+To support SmartOnFhir using this package, the server should have two HTTP handlers.
+Usage example:
+func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
+    sc := smartonfhir.NewConfig(*fhirClientID, *fhirURL, *fhirRedirectURL, fhirScopes)
+    redirectURL, err := s.sc.AuthCodeURL(launchID, state)
+    if err != nil {
+        // Handle error
+    }
+    // Sends the user to be authenticated by the FHIR server after which they will be
+    // redirected back to redirectURL
+    http.Redirect(w,  r, redirectURL, http.StatusFound)
+}
+
+// Handles requests sent to fhirRedirectURL.
+func (s *Server) handleRedirect(w http.ResponseWriter, r *http.Request) {
+	code := r.Body["code"]
+	rs := r.Body["state"]
+	if state != rs {
+		// Return error since to prevent CSRF attacks.
+	}
+    sc := smartonfhir.NewConfig(*fhirClientID, *fhirURL, *fhirRedirectURL, fhirScopes)
+    token, err := s.sc.Exchange(ctx, code)
+    if err != nil {
+        // Handle error
+    }
+    // Store the token for future use.
+}
+*/
 package smartonfhir
 
 import (
@@ -27,35 +50,32 @@ const (
 
 // Config contains configuration information for smartonfhir authentication flow.
 type Config struct {
-	fhirClientID, fhirRedirectURL string
-	fhirScopes                    []string
+	fhirClientID, fhirURL, fhirRedirectURL string
+	fhirScopes                             []string
 }
 
 // NewConfig creates and returns a new Config.
-func NewConfig(fhirClientID, fhirRedirectURL string, fhirScopes []string) *Config {
-	return &Config{fhirClientID: fhirClientID, fhirRedirectURL: fhirRedirectURL, fhirScopes: fhirScopes}
+func NewConfig(fhirClientID, fhirURL, fhirRedirectURL string, fhirScopes []string) *Config {
+	return &Config{fhirClientID: fhirClientID, fhirURL: fhirURL, fhirRedirectURL: fhirRedirectURL, fhirScopes: fhirScopes}
 }
 
 // AuthCodeURL returns a URL to the FHIR server's consent page that asks for permissions for the
 // scopes specified in Config.
-// fhirURL will be used to fetch FHIR authenticaion configuration, a.k.a, smart configuration
-// and as the value aud parameter in the returned URL.
 // state is a token to protect the user from CSRF attacks and must be provided. Once a request
 // is received in fhirRedirectURL, the server should ensure the state in the request always equals
 // to the state passed here.
-func (c *Config) AuthCodeURL(fhirURL, launchID, state string) (string, error) {
-	config, err := c.authConfig(fhirURL)
+func (c *Config) AuthCodeURL(launchID, state string) (string, error) {
+	config, err := c.authConfig()
 	if err != nil {
 		return "", err
 	}
 
-	return config.AuthCodeURL(state, oauth2.SetAuthURLParam("aud", fhirURL), oauth2.SetAuthURLParam("launch", launchID)), nil
+	return config.AuthCodeURL(state, oauth2.SetAuthURLParam("aud", c.fhirURL), oauth2.SetAuthURLParam("launch", launchID)), nil
 }
 
 // Exchange exchanges an authorization code for a token.
-// fhirURL is required to fetch FHIR authenticaion configuration, a.k.a, smart configuration.
-func (c *Config) Exchange(ctx context.Context, fhirURL, code string) (*oauth2.Token, error) {
-	config, err := c.authConfig(fhirURL)
+func (c *Config) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
+	config, err := c.authConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -66,10 +86,10 @@ func (c *Config) Exchange(ctx context.Context, fhirURL, code string) (*oauth2.To
 // authConfig fetches the FHIR authentication configuration and returns an oauth2.Config based on
 // the authURL and tokenURL. authConfig will not check supported_scopes in the FHIR authentication
 // configuration since it is not a required field.
-func (c *Config) authConfig(fhirURL string) (*oauth2.Config, error) {
-	rURL, err := url.Parse(fhirURL)
+func (c *Config) authConfig() (*oauth2.Config, error) {
+	rURL, err := url.Parse(c.fhirURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse fhirURL %s", fhirURL)
+		return nil, fmt.Errorf("failed to parse fhirURL %s", c.fhirURL)
 	}
 	rURL.Path = smartConfigPath
 	resp, err := http.Get(rURL.String())
