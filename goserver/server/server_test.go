@@ -47,12 +47,12 @@ func TestLaunchHandler_HTTPError(t *testing.T) {
 		},
 		{
 			name:               "empty iss",
-			queryParameters:    "iss=\"\"",
+			queryParameters:    "?iss=\"\"",
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
 		{
 			name:               "unauthorized iss",
-			queryParameters:    "iss=https://unauthorized.fhir.com",
+			queryParameters:    "?iss=https://unauthorized.fhir.com",
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
 	}
@@ -63,12 +63,13 @@ func TestLaunchHandler_HTTPError(t *testing.T) {
 			if err != nil {
 				t.Fatalf("NewServer(authorizedFHIRURL, 0, sm) -> %v, nil expected", err)
 			}
-			handler := http.HandlerFunc(s.handleLaunch)
-			req := httptest.NewRequest("GET", "/?"+test.queryParameters, nil)
-			rr := httptest.NewRecorder()
-			handler.ServeHTTP(rr, req)
-			s.handleLaunch(rr, req)
-			if status := rr.Code; status != test.expectedHTTPStatus {
+			ts := httptest.NewServer(http.HandlerFunc(s.handleLaunch))
+			defer ts.Close()
+			res, err := http.Get(ts.URL + test.queryParameters)
+			if err != nil {
+				t.Fatalf("http.Get() -> %v, nil expected", err)
+			}
+			if status := res.StatusCode; status != test.expectedHTTPStatus {
 				t.Errorf("server.handleLaunch returned wrong status code: got %v want %v",
 					status, test.expectedHTTPStatus)
 			}
@@ -78,25 +79,39 @@ func TestLaunchHandler_HTTPError(t *testing.T) {
 
 func TestHandleLaunch(t *testing.T) {
 	fhirURL := "https://authorized.fhir.com"
-	sm := session.NewManager(sessiontest.NewMemoryStore(), 30*time.Minute)
+	ss := sessiontest.NewMemoryStore()
+	sm := session.NewManager(ss, 30*time.Minute)
 	s, err := NewServer(fhirURL, 0, sm)
 	if err != nil {
 		t.Fatalf("NewServer(authorizedFHIRURL, 0, sm) -> %v, nil expected", err)
 	}
-	handler := http.HandlerFunc(s.handleLaunch)
-	rr := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/?iss="+fhirURL, nil)
-	handler.ServeHTTP(rr, req)
-	if status := rr.Code; status != http.StatusOK {
+	ts := httptest.NewServer(http.HandlerFunc(s.handleLaunch))
+	defer ts.Close()
+	res, err := http.Get(ts.URL + "?iss=" + fhirURL)
+	if err != nil {
+		t.Fatalf("http.Get() -> %v, nil expected", err)
+	}
+	if status := res.StatusCode; status != http.StatusOK {
 		t.Errorf("server.handleLaunch returned wrong status code, got %v, want %v",
 			status, http.StatusOK)
 	}
 
-	sess, err := sm.Retrieve(req)
-	if err != nil {
-		t.Fatalf("cannot find session, got err %v", err)
-	}
+	sess := sessionFromResp(t, ss, res)
 	if sess.FHIRURL != fhirURL {
 		t.Fatalf("unexpected fhirURL in session: %s, wanted: %s", sess.FHIRURL, fhirURL)
 	}
+}
+
+func sessionFromResp(t *testing.T, ss session.Store, res *http.Response) *session.Session {
+	sessionID := strings.Split(res.Header.Get("Set-Cookie"), ";")[0]
+	sessionID = strings.Split(sessionID, "=")[1]
+	b, err := ss.Retrieve(sessionID)
+	if err != nil {
+		t.Fatalf("ss.Retrieve(%s) -> %v, nil expected", sessionID, err)
+	}
+	session, err := session.FromBytes(b)
+	if err != nil {
+		t.Fatalf("session.FromBytes() -> %v, nil expected", err)
+	}
+	return session
 }

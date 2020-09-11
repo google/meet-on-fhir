@@ -61,7 +61,9 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	sess.FHIRURL = iss[0]
-	s.sm.Save(sess)
-
+	if err := s.sm.Save(sess); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
