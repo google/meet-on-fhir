@@ -39,6 +39,7 @@ func (m *Manager) New(w http.ResponseWriter, r *http.Request) (*Session, error) 
 	if err != nil {
 		return nil, err
 	}
+	// TODO(Issue #21): Figure out whehter signing the session ID in cookie is needed.
 	cookie := &http.Cookie{Name: sessionCookieName, Value: s.ID, Expires: s.ExpiresAt}
 	http.SetCookie(w, cookie)
 	r.AddCookie(cookie)

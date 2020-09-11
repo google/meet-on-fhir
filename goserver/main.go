@@ -17,7 +17,7 @@ var httpServerPort = flag.Int("http_server_port", 8080, "The port to start the s
 
 func main() {
 	flag.Parse()
-	// TODO(Issue #21): Use a Cloud SQL based session manage for producation.
+	// TODO(Issue #20): Use a Cloud SQL based session manage for producation.
 	sm := session.NewManager(sessiontest.NewMemoryStore(), *sessionDuration)
 	server, err := server.NewServer(*authorizedFhirURL, *httpServerPort, sm)
 	if err != nil {

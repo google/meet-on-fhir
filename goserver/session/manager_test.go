@@ -19,7 +19,6 @@ func TestManager(t *testing.T) {
 	sess, err := m.New(rr, req)
 	if err != nil {
 		t.Fatalf("sm.New() -> %v, expect nil", err)
-		return
 	}
 	// Check session cookie set in response
 	cookies := rr.HeaderMap["Set-Cookie"]
@@ -38,7 +37,6 @@ func TestManager(t *testing.T) {
 	found, err := m.Retrieve(req)
 	if err != nil {
 		t.Fatalf("m.Retrieve() -> %v, expect nil", err)
-		return
 	}
 	if !reflect.DeepEqual(found, expected) {
 		t.Errorf("found session %v does not equal to expected %v", found, expected)
@@ -48,13 +46,11 @@ func TestManager(t *testing.T) {
 	sess.FHIRURL = "url"
 	if err = m.Save(sess); err != nil {
 		t.Fatalf("m.Save() -> %v, expect nil", err)
-		return
 	}
 	expected.FHIRURL = "url"
 	found, err = m.Retrieve(req)
 	if err != nil {
 		t.Fatalf("m.Find() -> %v, expect nil", err)
-		return
 	}
 	if !reflect.DeepEqual(found, expected) {
 		t.Errorf("found session %v does not equal to expected %v", found, expected)
