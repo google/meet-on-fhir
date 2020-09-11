@@ -1,3 +1,5 @@
+// Package server implements an HTTP server.
+// TODO(Issue #22): Handle errors consistently.
 package server
 
 import (
