@@ -1,0 +1,24 @@
+<!-- Toolbar -->
+<div class="toolbar" role="banner">
+  <img alt="Organization Logo" src="assets/logo.png">
+  <span>Virtual waiting room</span>
+  <div class="spacer"></div>
+  <div class="org-info">
+    <div>
+      <p>{{organizationInfo.name}}</p>
+    </div>
+    <div>
+      <p>{{organizationInfo.phone}}</p>
+    </div>
+  </div>
+</div>
+
+<div class="content" role="main">
+  <router-outlet></router-outlet>
+</div>
+
+<div class="footer">
+  <a mat-button href="https://www.google.com">Privacy</a>
+  <a mat-button href="https://www.google.com">Terms</a>
+  <a mat-button href="https://www.google.com">Help</a>
+</div>
