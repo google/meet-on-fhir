@@ -20,7 +20,7 @@ func (s *Server) handleRedirect(w http.ResponseWriter, r *http.Request) {
 	code := r.Body["code"]
 	rs := r.Body["state"]
 	if state != rs {
-		// Return error since to prevent CSRF attacks.
+    	// Return error to prevent CSRF attacks.
 	}
     sc := smartonfhir.NewConfig(*fhirClientID, *fhirURL, *fhirRedirectURL, fhirScopes)
     token, err := s.sc.Exchange(ctx, code)
