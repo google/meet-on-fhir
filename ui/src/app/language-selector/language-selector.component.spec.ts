@@ -8,8 +8,10 @@ import {Router} from '@angular/router';
 import {RouterTestingModule} from '@angular/router/testing';
 
 import {getNativeName, LanguageCode} from '../i18n-helper';
+import {ALL_LANGUAGE_ASSETS_PROVIDER, ALL_LANGUAGES_ASSETS_DATA} from '../i18n-strings';
 import {LanguagesService} from '../languages.service';
 import {TEST_ROUTES} from '../testing/routes';
+import {TESTING_ALL_LANGUAGE_ASSETS_PROVIDER} from '../testing/testing-i18n-strings';
 
 import {LanguageSelectorComponent} from './language-selector.component';
 
@@ -30,6 +32,7 @@ describe('LanguageSelectorComponent', () => {
             MatListModule,
             RouterTestingModule.withRoutes(TEST_ROUTES),
           ],
+          providers: [TESTING_ALL_LANGUAGE_ASSETS_PROVIDER],
           declarations: [LanguageSelectorComponent],
         })
         .compileComponents();
@@ -56,7 +59,7 @@ describe('LanguageSelectorComponent', () => {
     const selected = await (await loader.getHarness(MatListOptionHarness.with({
                        selected: true
                      }))).getText();
-    expect(selected).toBe(getNativeName(component.defaultLanguage));
+    expect(selected).toBe(getNativeName(languages.language));
   });
 
   it('should display all language options', async () => {
@@ -64,6 +67,18 @@ describe('LanguageSelectorComponent', () => {
     const labels = options.map(option => option.getText());
     const labelTexts = (await Promise.all(labels)).map(l => l.trim());
     expect(labelTexts).toEqual(TEST_LANGUAGES.map(getNativeName));
+  });
+
+
+  it('should update strings after select a language', async () => {
+    expect(
+        fixture.debugElement.nativeElement.querySelector('button').textContent)
+        .toBe('English');
+    const select = await loader.getHarness(MatSelectionListHarness);
+    await select.selectItems({text: getNativeName(LanguageCode.Spanish)});
+    expect(
+        fixture.debugElement.nativeElement.querySelector('button').textContent)
+        .toBe('Spanish');
   });
 
   it('should submit selected language and navigate', async () => {

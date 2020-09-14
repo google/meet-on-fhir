@@ -8,8 +8,9 @@ import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 
 import {AppRoutingModule} from './app-routing.module';
 import {AppComponent} from './app.component';
+import {ConsentComponent} from './consent/consent.component';
+import {ALL_LANGUAGE_ASSETS_PROVIDER} from './i18n-strings';
 import {LanguageSelectorComponent} from './language-selector/language-selector.component';
-import { ConsentComponent } from './consent/consent.component';
 
 @NgModule({
   declarations: [AppComponent, LanguageSelectorComponent, ConsentComponent],
@@ -22,7 +23,9 @@ import { ConsentComponent } from './consent/consent.component';
     MatDividerModule,
     MatListModule,
   ],
-  providers: [],
+  providers: [
+    ALL_LANGUAGE_ASSETS_PROVIDER,
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule {
