@@ -42,7 +42,7 @@ func TestManager(t *testing.T) {
 		t.Errorf("found session %v does not equal to expected %v", found, expected)
 	}
 
-	// test save - override the existing one
+	// Test save - override the existing one
 	sess.FHIRURL = "url"
 	if err = m.Save(sess); err != nil {
 		t.Fatalf("m.Save() -> %v, expect nil", err)

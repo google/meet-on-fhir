@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -35,31 +36,48 @@ func TestNewServerError(t *testing.T) {
 	}
 }
 
-func TestLaunchHandler_HTTPError(t *testing.T) {
+func TestLaunchHandlerError(t *testing.T) {
 	tests := []struct {
 		name, queryParameters string
+		store                 session.Store
 		expectedHTTPStatus    int
 	}{
 		{
 			name:               "no iss provided",
 			queryParameters:    "",
+			store:              nil,
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
 		{
 			name:               "empty iss",
 			queryParameters:    "?iss=\"\"",
+			store:              nil,
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
 		{
 			name:               "unauthorized iss",
 			queryParameters:    "?iss=https://unauthorized.fhir.com",
+			store:              nil,
 			expectedHTTPStatus: http.StatusUnauthorized,
+		},
+		{
+			name:               "new session error",
+			queryParameters:    "?iss=https://authorized.fhir.com",
+			store:              sessiontest.NewMemoryStoreWithError(fmt.Errorf("new session error"), nil),
+			expectedHTTPStatus: http.StatusInternalServerError,
+		},
+		{
+			name:               "save session error",
+			queryParameters:    "?iss=https://authorized.fhir.com",
+			store:              sessiontest.NewMemoryStoreWithError(nil, fmt.Errorf("save session error")),
+			expectedHTTPStatus: http.StatusInternalServerError,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			s, err := NewServer("https://authorized.fhir.com", 0, nil)
+			sm := session.NewManager(test.store, 30*time.Minute)
+			s, err := NewServer("https://authorized.fhir.com", 0, sm)
 			if err != nil {
 				t.Fatalf("NewServer(authorizedFHIRURL, 0, sm) -> %v, nil expected", err)
 			}
