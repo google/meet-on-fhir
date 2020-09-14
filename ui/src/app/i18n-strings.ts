@@ -10,7 +10,7 @@ type LanguageAssets = Partial<Record<LanguageCode, StringAssets>>;
  * Strings used in UI in all supported languages.
  * We only provide English string. To add a new lanuage, do the following:
  * 1. copy and paste everything in 'en'.
- * 2. change all Engilish strings to the correct translation.
+ * 2. change all English strings to the correct translation.
  * 3. change the key to the correponding language code string. The string must
  * be one of the defined LanguageCode in i18-helper.ts.
  */
