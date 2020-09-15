@@ -1,0 +1,51 @@
+@import "~@angular/material/theming";
+
+// Modify the following values to change the primary color (e.g. the color of
+// buttons). We uses Angular Material's theming system which described here:
+// https://material.angular.io/guide/theming#defining-a-custom-theme
+// All available color palettes are illustrated at the "2014 Material Design
+// color palettes section" in https://material.io/design/color/.
+// Append "$mat-" to the color that you prefer, e.g "$mat-blue" if you prefer
+// the blue color palette. Once a color palette is selected, a numberic variant
+// value (default-color-variant) can be modify to select a color from the
+// palette.
+// TODO: figure out if it is possible to pull these values from enviroment
+// variables.
+$telehealth-color-palette: $mat-indigo;
+$default-color-variant: 500;
+
+///////////////////////////////////////////////////////////////////////////////
+// WARNING: Do NOT modify anything below unless you know exactly what you are
+// doing.
+///////////////////////////////////////////////////////////////////////////////
+
+@include mat-core();
+
+// Disable accent color by using the same color for primary and accent.
+// For each palette, you can optionally specify a default, lighter, and darker
+$telehealth-primary: mat-palette(
+  $telehealth-color-palette,
+  $default-color-variant
+);
+$telehealth-accent: mat-palette(
+  $telehealth-color-palette,
+  $default-color-variant
+);
+
+// The warn palette is optional (defaults to red).
+$telehealth-warn: mat-palette($mat-indigo);
+
+// Create the theme object. A theme consists of configurations for individual
+// theming systems such as `color` or `typography`.
+$telehealth-theme: mat-light-theme(
+  (
+    color: (
+      primary: $telehealth-primary,
+      accent: $telehealth-accent,
+      warn: $telehealth-warn,
+    ),
+  )
+);
+
+// Include theme styles for core and each component used.
+@include angular-material-theme($telehealth-theme);
