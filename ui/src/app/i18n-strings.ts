@@ -6,6 +6,9 @@ import {LanguageCode, StringAssets} from './i18n-helper';
 // expected and no missing field in any translation.
 type LanguageAssets = Partial<Record<LanguageCode, StringAssets>>;
 
+export const ALL_LANGUAGES_ASSETS_DATA =
+    new InjectionToken<LanguageAssets>('AllLanguagesAssetsData');
+
 /**
  * Strings used in UI in all supported languages.
  * We only provide English string. To add a new lanuage, do the following:
@@ -26,11 +29,20 @@ export const ALL_LANGUAGE_ASSETS: LanguageAssets = {
       'By continuing to participate in this telehealth visit, you are providing verbal consent for treatment.'
     ],
     languageSelect: 'Select your language:',
-    consentButton: 'Continue to check-in'
+    consentButton: 'Continue to check-in',
   },
   // Add more languages below. e.g.
   // 'zh-CN': {
   //   submitButton: '提交',
   //   ...
   //  },
+};
+
+/**
+ * This provider provides ALL_LANGAUGE_ASSETS above as ALL_LANGUAGE_ASSETS_DATA
+ * token. This indrection allows easier testing.
+ */
+export const ALL_LANGUAGE_ASSETS_PROVIDER = {
+  provide: ALL_LANGUAGES_ASSETS_DATA,
+  useValue: ALL_LANGUAGE_ASSETS,
 };

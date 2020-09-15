@@ -1,14 +1,14 @@
-<mat-card>
-  <h3>{{languages.stringAssets.languageSelect}}</h3>
-  <mat-selection-list #language [multiple]="false">
+<mat-card *ngIf="(languages.stringAssets | async) as stringAssets">
+  <h3>{{stringAssets.languageSelect}}</h3>
+  <mat-selection-list #language [multiple]="false" (selectionChange)="onLanguageOptionSelected($event)">
     <mat-list-option *ngFor="let language of supportedLanguages" [value]="language.code"
-      [selected]="language.code == defaultLanguage">
+      [selected]="language.code == languages.language">
       {{language.name}}
     </mat-list-option>
   </mat-selection-list>
 
   <div class="actions">
     <button mat-raised-button color="primary"
-      (click)="setLanguage(language.selectedOptions.selected[0]?.value)">Submit</button>
+      (click)="setLanguage(language.selectedOptions.selected[0]?.value)">{{stringAssets.submitButton}}</button>
   </div>
 </mat-card>

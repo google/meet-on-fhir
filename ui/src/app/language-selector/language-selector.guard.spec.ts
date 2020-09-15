@@ -5,6 +5,7 @@ import {RouterTestingModule} from '@angular/router/testing';
 import {LanguageCode} from '../i18n-helper';
 import {LanguagesService} from '../languages.service';
 import {TEST_ROUTES} from '../testing/routes';
+import {TESTING_ALL_LANGUAGE_ASSETS_PROVIDER} from '../testing/testing-i18n-strings';
 
 import {LanguageSelectorGuard} from './language-selector.guard';
 
@@ -20,6 +21,7 @@ describe('LanguageSelectorGuard', () => {
       imports: [
         RouterTestingModule.withRoutes(TEST_ROUTES),
       ],
+      providers: [TESTING_ALL_LANGUAGE_ASSETS_PROVIDER],
     });
     languages = TestBed.inject(LanguagesService);
     guard = TestBed.inject(LanguageSelectorGuard);
@@ -31,14 +33,14 @@ describe('LanguageSelectorGuard', () => {
   });
 
   it('should activate if more than one supported languages', () => {
-    spyOnProperty(languages, 'supportedLanguageCodes', 'get').and.returnValue([
-      LanguageCode.Spanish, LanguageCode['English(US)']
-    ]);
     expect(guard.canActivate(next, state)).toBe(true);
   });
 
   it('should navigate to consent page if only one supported language', () => {
     spyOn(router, 'navigateByUrl').and.returnValue(Promise.resolve(true));
+    spyOnProperty(languages, 'supportedLanguageCodes', 'get').and.returnValue([
+      LanguageCode['English(US)']
+    ]);
     expect(guard.canActivate(next, state)).toBe(false);
     expect(router.navigateByUrl).toHaveBeenCalledWith('/consent');
   });

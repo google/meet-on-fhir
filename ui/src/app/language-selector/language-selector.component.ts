@@ -1,4 +1,5 @@
 import {Component, OnInit} from '@angular/core';
+import {MatSelectionListChange} from '@angular/material/list';
 import {Router} from '@angular/router';
 
 import {getNativeName, LanguageCode} from '../i18n-helper';
@@ -20,8 +21,6 @@ interface LanguageOption {
 export class LanguageSelectorComponent implements OnInit {
   supportedLanguages: LanguageOption[];
 
-  defaultLanguage = LanguageCode['English(US)'];
-
   constructor(
       readonly languages: LanguagesService, private readonly router: Router) {
     this.supportedLanguages =
@@ -32,8 +31,12 @@ export class LanguageSelectorComponent implements OnInit {
 
   ngOnInit(): void {}
 
+  onLanguageOptionSelected(e: MatSelectionListChange): void {
+    this.languages.language = e.option.value;
+  }
+
   setLanguage(language: LanguageCode): void {
-    this.languages.selectedLanguage = language;
+    this.languages.language = language;
     this.router.navigateByUrl('/consent');
   }
 }
