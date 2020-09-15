@@ -4,13 +4,17 @@ package session
 import (
 	"encoding/json"
 	"time"
+
+	"github.com/google/meet-on-fhir/smartonfhir"
 )
 
 // Session stores necessary information for a telehealth session.
 type Session struct {
-	ID        string    `json:"id"`
-	FHIRURL   string    `json:"fhir_url"`
-	ExpiresAt time.Time `json:"expires_at"`
+	ID          string                   `json:"id"`
+	FHIRURL     string                   `json:"fhir_url"`
+	LaunchID    string                   `json:"launch_id"`
+	FHIRContext *smartonfhir.FHIRContext `json:"fhir_context"`
+	ExpiresAt   time.Time                `json:"expires_at"`
 }
 
 // Bytes converts the session to JSON bytes.

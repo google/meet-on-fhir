@@ -27,10 +27,14 @@ func StartFHIRServer(configPath, authBaseURL, tokenURL string) *httptest.Server 
 }
 
 // StartFHIRTokenServer starts and returns a server that handles token exchange requests and
-// returns the given token as JSON in the response body. The handler will return status 400 if
+// returns the given token JSON in the response body. The handler will return status 400 if
 // the request contains form values that do not match the given ones.
 func StartFHIRTokenServer(code, redirectURI, clientID string, tokenJSON []byte) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
 		if r.FormValue("grant_type") != "authorization_code" || r.FormValue("code") != code || r.FormValue("redirect_uri") != redirectURI || r.FormValue("client_id") != clientID {
 			w.WriteHeader(http.StatusBadRequest)
 			return

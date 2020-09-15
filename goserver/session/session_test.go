@@ -4,7 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/oauth2"
+
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/meet-on-fhir/smartonfhir"
 )
 
 func TestSession(t *testing.T) {
@@ -18,7 +21,7 @@ func TestSession(t *testing.T) {
 		},
 		{
 			name:    "session with all fields",
-			session: &Session{ID: "session-id", FHIRURL: "fhir-url", ExpiresAt: time.Now()},
+			session: &Session{ID: "session-id", FHIRURL: "fhir-url", ExpiresAt: time.Now(), FHIRContext: &smartonfhir.FHIRContext{Token: &oauth2.Token{AccessToken: "access-token", RefreshToken: "refresh-token", TokenType: "Bearer", Expiry: time.Now()}, Scope: "scope", EncounterID: "e123", PatientID: "p123"}},
 		},
 	}
 
@@ -32,7 +35,7 @@ func TestSession(t *testing.T) {
 			if err != nil {
 				t.Fatalf("FromBytes(b)-> %v, nil expected", err)
 			}
-			if diff := cmp.Diff(test.session, decoded); diff != "" {
+			if diff := cmp.Diff(test.session, decoded, cmp.AllowUnexported(oauth2.Token{})); diff != "" {
 				t.Errorf("decoded session does not equal to the original one, diff %s", diff)
 			}
 		})

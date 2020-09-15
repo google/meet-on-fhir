@@ -53,8 +53,10 @@ const (
 
 // FHIRContext represents Smart On FHIR context returned from FHIR auth server.
 type FHIRContext struct {
-	Token                         *oauth2.Token
-	EncounterID, PatientID, Scope string
+	Token       *oauth2.Token `json:"token"`
+	EncounterID string        `json:"encounter_id"`
+	PatientID   string        `json:"patient_id"`
+	Scope       string        `json:"scopes"`
 }
 
 // Config contains configuration information for smartonfhir authentication flow.
@@ -70,6 +72,7 @@ func NewConfig(fhirClientID, fhirRedirectURL string, fhirScopes []string) *Confi
 
 // AuthCodeURL returns a URL to the FHIR server's consent page that asks for permissions for the
 // scopes specified in Config.
+// fhirURL is the URL of the FHIR server to fetch authentication config(a.k.a. smart configuration)
 // state is a token to protect the user from CSRF attacks and must be provided. Once a request
 // is received in fhirRedirectURL, the server should ensure the state in the request always equals
 // to the state passed here.
