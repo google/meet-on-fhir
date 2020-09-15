@@ -1,19 +1,13 @@
 // Package sessiontest provides testing utilities for session package.
 package sessiontest
 
-import (
-	"errors"
-)
-
-// ErrNotFound is the error returned when something is not found.
-var ErrNotFound = errors.New("not found")
-
 // MemoryStore is an in-memory implementaion of Store.
 // It is not thread-safe and should be used by tests only.
 type MemoryStore struct {
-	items            map[string]interface{}
-	storeErr         error
-	storeExistingErr error
+	items                map[string]interface{}
+	nextStoreErr         error
+	nextStoreExistingErr error
+	nextRetrieveErr      error
 }
 
 // NewMemoryStore creates a new MemoryStore.
@@ -22,34 +16,43 @@ func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{items: items}
 }
 
-// NewMemoryStoreWithError creates a new MemoryStore that returns the provided error
-// under centain cases.
-func NewMemoryStoreWithError(storeErr, storeExistingErr error) *MemoryStore {
-	items := make(map[string]interface{})
-	return &MemoryStore{items: items, storeErr: storeErr, storeExistingErr: storeExistingErr}
+// WithNextStoreErr returns the same Store with a nextStoreErr.
+func (s *MemoryStore) WithNextStoreErr(err error) *MemoryStore {
+	s.nextStoreErr = err
+	return s
+}
+
+// WithNextStoreExistingErr returns the same Store with a nextStoreExistingErr.
+func (s *MemoryStore) WithNextStoreExistingErr(err error) *MemoryStore {
+	s.nextStoreExistingErr = err
+	return s
+}
+
+// WithNextRetrieveErr returns the same Store with a nextRetrieveErr.
+func (s *MemoryStore) WithNextRetrieveErr(err error) *MemoryStore {
+	s.nextRetrieveErr = err
+	return s
 }
 
 // Store implements Store of Store interface.
 func (s *MemoryStore) Store(key string, val []byte) error {
-	if s.storeErr != nil {
-		return s.storeErr
+	if s.nextStoreErr != nil {
+		return s.nextStoreErr
 	}
 
-	if _, ok := s.items[key]; ok && s.storeExistingErr != nil {
-		return s.storeExistingErr
+	if _, ok := s.items[key]; ok && s.nextStoreExistingErr != nil {
+		return s.nextStoreExistingErr
 	}
+
 	s.items[key] = val
 	return nil
 }
 
 // Retrieve implements Retrieve of Store interface.
 func (s *MemoryStore) Retrieve(key string) ([]byte, error) {
-	if s.storeErr != nil {
-		return nil, s.storeErr
+	if s.nextRetrieveErr != nil {
+		return nil, s.nextRetrieveErr
 	}
-	i, ok := s.items[key]
-	if !ok {
-		return nil, ErrNotFound
-	}
+	i := s.items[key]
 	return i.([]byte), nil
 }

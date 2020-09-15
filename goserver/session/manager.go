@@ -5,6 +5,7 @@
 package session
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -12,7 +13,10 @@ import (
 	"github.com/google/uuid"
 )
 
-const sessionCookieName = "session"
+const SessionCookieName = "session"
+
+// ErrNotFound is the error returned when something is not found.
+var ErrNotFound = errors.New("not found")
 
 // Store provides functions to store/retrieve keyed binary data.
 type Store interface {
@@ -40,7 +44,7 @@ func (m *Manager) New(w http.ResponseWriter, r *http.Request) (*Session, error) 
 		return nil, err
 	}
 	// TODO(Issue #21): Figure out whehter signing the session ID in cookie is needed.
-	cookie := &http.Cookie{Name: sessionCookieName, Value: s.ID, Expires: s.ExpiresAt}
+	cookie := &http.Cookie{Name: SessionCookieName, Value: s.ID, Expires: s.ExpiresAt}
 	http.SetCookie(w, cookie)
 	// Add cookie on the incoming request as well to perform like a middleware which
 	// makes it easier to add more request processors relying on sessions.
@@ -50,7 +54,7 @@ func (m *Manager) New(w http.ResponseWriter, r *http.Request) (*Session, error) 
 
 // Retrieve returns the session whose id matches the session id in HTTP request cookie.
 func (m *Manager) Retrieve(r *http.Request) (*Session, error) {
-	cookie, err := r.Cookie(sessionCookieName)
+	cookie, err := r.Cookie(SessionCookieName)
 	if err != nil {
 		return nil, err
 	}
@@ -85,6 +89,9 @@ func (m *Manager) find(id string) (*Session, error) {
 	v, err := m.store.Retrieve(id)
 	if err != nil {
 		return nil, err
+	}
+	if v == nil {
+		return nil, ErrNotFound
 	}
 	return FromBytes(v)
 }

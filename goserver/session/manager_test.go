@@ -25,8 +25,8 @@ func TestManager(t *testing.T) {
 	if len(cookies) < 1 {
 		t.Fatal("\"Set-Cookie\" header missing in response")
 	}
-	if !strings.Contains(cookies[0], sessionCookieName) {
-		t.Fatalf("cookie %s not set in response", sessionCookieName)
+	if !strings.Contains(cookies[0], SessionCookieName) {
+		t.Fatalf("cookie %s not set in response", SessionCookieName)
 	}
 	if !strings.Contains(cookies[0], sess.ID) {
 		t.Fatal("wrong session id set in response cookie")
