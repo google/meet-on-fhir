@@ -24,3 +24,4 @@ steps:
   - name: "golang"
     args: ['go', 'test', './...']
     dir: "goserver"
+    
