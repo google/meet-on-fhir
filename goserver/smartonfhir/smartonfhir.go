@@ -23,11 +23,11 @@ func (s *Server) handleRedirect(w http.ResponseWriter, r *http.Request) {
     	// Return error to prevent CSRF attacks.
 	}
     sc := smartonfhir.NewConfig(*fhirClientID, *fhirURL, *fhirRedirectURL, fhirScopes)
-    token, err := s.sc.Exchange(ctx, code)
+    fhirContext, err := s.sc.Exchange(ctx, code)
     if err != nil {
         // Handle error
     }
-    // Store the token for future use.
+    // Store the fhirContext for future use.
 }
 */
 package smartonfhir
@@ -46,17 +46,26 @@ const (
 	smartConfigPath = "/.well-known/smart-configuration"
 	authURLKey      = "authorization_endpoint"
 	tokenURLKey     = "token_endpoint"
+	patientIDKey    = "patient"
+	encounterIDKey  = "encounter"
+	scopeKey        = "scope"
 )
+
+// FHIRContext represents Smart On FHIR context returned from FHIR auth server.
+type FHIRContext struct {
+	Token                         *oauth2.Token
+	EncounterID, PatientID, Scope string
+}
 
 // Config contains configuration information for smartonfhir authentication flow.
 type Config struct {
-	fhirClientID, fhirURL, fhirRedirectURL string
-	fhirScopes                             []string
+	fhirClientID, fhirRedirectURL string
+	fhirScopes                    []string
 }
 
 // NewConfig creates and returns a new Config.
-func NewConfig(fhirClientID, fhirURL, fhirRedirectURL string, fhirScopes []string) *Config {
-	return &Config{fhirClientID: fhirClientID, fhirURL: fhirURL, fhirRedirectURL: fhirRedirectURL, fhirScopes: fhirScopes}
+func NewConfig(fhirClientID, fhirRedirectURL string, fhirScopes []string) *Config {
+	return &Config{fhirClientID: fhirClientID, fhirRedirectURL: fhirRedirectURL, fhirScopes: fhirScopes}
 }
 
 // AuthCodeURL returns a URL to the FHIR server's consent page that asks for permissions for the
@@ -64,32 +73,46 @@ func NewConfig(fhirClientID, fhirURL, fhirRedirectURL string, fhirScopes []strin
 // state is a token to protect the user from CSRF attacks and must be provided. Once a request
 // is received in fhirRedirectURL, the server should ensure the state in the request always equals
 // to the state passed here.
-func (c *Config) AuthCodeURL(launchID, state string) (string, error) {
-	config, err := c.authConfig()
+func (c *Config) AuthCodeURL(fhirURL, launchID, state string) (string, error) {
+	config, err := c.authConfig(fhirURL)
 	if err != nil {
 		return "", err
 	}
 
-	return config.AuthCodeURL(state, oauth2.SetAuthURLParam("aud", c.fhirURL), oauth2.SetAuthURLParam("launch", launchID)), nil
+	return config.AuthCodeURL(state, oauth2.SetAuthURLParam("aud", fhirURL), oauth2.SetAuthURLParam("launch", launchID)), nil
 }
 
 // Exchange exchanges an authorization code for a token.
-func (c *Config) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
-	config, err := c.authConfig()
+func (c *Config) Exchange(ctx context.Context, fhirURL, code string) (*FHIRContext, error) {
+	config, err := c.authConfig(fhirURL)
 	if err != nil {
 		return nil, err
 	}
 
-	return config.Exchange(ctx, code, oauth2.SetAuthURLParam("client_id", c.fhirClientID))
+	tk, err := config.Exchange(ctx, code, oauth2.SetAuthURLParam("client_id", c.fhirClientID))
+	if err != nil {
+		return nil, err
+	}
+	fc := &FHIRContext{Token: tk}
+	if s, ok := tk.Extra(patientIDKey).(string); ok {
+		fc.PatientID = s
+	}
+	if s, ok := tk.Extra(encounterIDKey).(string); ok {
+		fc.EncounterID = s
+	}
+	if s, ok := tk.Extra(scopeKey).(string); ok {
+		fc.Scope = s
+	}
+	return fc, nil
 }
 
 // authConfig fetches the FHIR authentication configuration and returns an oauth2.Config based on
 // the authURL and tokenURL. authConfig will not check supported_scopes in the FHIR authentication
 // configuration since it is not a required field.
-func (c *Config) authConfig() (*oauth2.Config, error) {
-	rURL, err := url.Parse(c.fhirURL)
+func (c *Config) authConfig(fhirURL string) (*oauth2.Config, error) {
+	rURL, err := url.Parse(fhirURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse fhirURL %s", c.fhirURL)
+		return nil, fmt.Errorf("failed to parse fhirURL %s", fhirURL)
 	}
 	rURL.Path = smartConfigPath
 	resp, err := http.Get(rURL.String())
