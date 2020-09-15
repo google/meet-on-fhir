@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"golang.org/x/oauth2"
 
@@ -33,7 +33,10 @@ var (
 	testFHIRAccessToken  = "fhir-access-token"
 	testFHIRRefreshToken = "fhir-refresh-token"
 	testFHIRTokenType    = "Bearer"
-	testFHIRTokenJSON    = fmt.Sprintf("{\"access_token\": \"%s\", \"refresh_token\": \"%s\", \"token_type\":\"%s\", \"patient\":\"p123\", \"encounter\": \"e123\"}", testFHIRAccessToken, testFHIRRefreshToken, testFHIRTokenType)
+	testScope            = "launch+profile"
+	testPatientID        = "p123"
+	testEncounterID      = "e123"
+	testFHIRTokenJSON    = fmt.Sprintf("{\"access_token\":\"%s\", \"refresh_token\":\"%s\", \"token_type\":\"%s\", \"patient\":\"%s\", \"encounter\":\"%s\", \"scope\":\"%s\"}", testFHIRAccessToken, testFHIRRefreshToken, testFHIRTokenType, testPatientID, testEncounterID, testScope)
 )
 
 func setupBackends() string {
@@ -74,6 +77,8 @@ func TestNewServerError(t *testing.T) {
 }
 
 func TestLaunchHandlerError(t *testing.T) {
+	fhirURL := setupBackends()
+	s := defaultServer(fhirURL, sessiontest.NewMemoryStore())
 	tests := []struct {
 		name, queryParameters string
 		store                 session.Store
@@ -98,14 +103,26 @@ func TestLaunchHandlerError(t *testing.T) {
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
 		{
+			name:               "no launch provided",
+			queryParameters:    "?iss=" + fhirURL,
+			store:              nil,
+			expectedHTTPStatus: http.StatusUnauthorized,
+		},
+		{
+			name:               "empty iss",
+			queryParameters:    "?launch=\"\"&iss=" + fhirURL,
+			store:              nil,
+			expectedHTTPStatus: http.StatusUnauthorized,
+		},
+		{
 			name:               "new session error",
-			queryParameters:    "?iss=https://authorized.fhir.com",
+			queryParameters:    "?launch=123&iss=" + fhirURL,
 			store:              sessiontest.NewMemoryStore().WithNextStoreErr(fmt.Errorf("new session error")),
 			expectedHTTPStatus: http.StatusInternalServerError,
 		},
 		{
 			name:               "save session error",
-			queryParameters:    "?iss=https://authorized.fhir.com",
+			queryParameters:    "?launch=123&iss=" + fhirURL,
 			store:              sessiontest.NewMemoryStore().WithNextStoreExistingErr(fmt.Errorf("save session error")),
 			expectedHTTPStatus: http.StatusInternalServerError,
 		},
@@ -113,8 +130,6 @@ func TestLaunchHandlerError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			fhirURL := setupBackends()
-			s := defaultServer(fhirURL, sessiontest.NewMemoryStore())
 			ts := httptest.NewServer(http.HandlerFunc(s.handleLaunch))
 			defer ts.Close()
 			res, err := http.Get(ts.URL + test.queryParameters)
@@ -197,13 +212,8 @@ func TestHandleFHIRRedirect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("s.sm.Retrieve() -> %v, nil expected", err)
 	}
-	expectedFHIRToken := &oauth2.Token{AccessToken: testFHIRAccessToken, RefreshToken: testFHIRRefreshToken, TokenType: "Bearer"}
-	var tokenRaw map[string]string
-	if err := json.Unmarshal([]byte(testFHIRTokenJSON), &tokenRaw); err != nil {
-		t.Fatalf("json.Marshal() -> %v, nil expected", err)
-	}
-	expectedFHIRToken = expectedFHIRToken.WithExtra(tokenRaw)
-	if diff := cmp.Diff(sess.FHIRToken, expectedFHIRToken, cmp.AllowUnexported(oauth2.Token{})); diff != "" {
+	expectedFHIRContext := &smartonfhir.FHIRContext{Token: &oauth2.Token{AccessToken: testFHIRAccessToken, RefreshToken: testFHIRRefreshToken, TokenType: testFHIRTokenType}, EncounterID: testEncounterID, PatientID: testPatientID, Scope: testScope}
+	if diff := cmp.Diff(sess.FHIRContext, expectedFHIRContext, cmpopts.IgnoreUnexported(oauth2.Token{})); diff != "" {
 		t.Errorf("fhir token in session does not equal to expected, diff %s", diff)
 	}
 }

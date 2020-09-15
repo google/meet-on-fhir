@@ -66,16 +66,22 @@ func (s *Server) Run() error {
 func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 	fhirURL := getFirstParamOrEmpty(r, issKey)
 	if fhirURL == "" {
+		fmt.Printf(">>>>>>>>>>401 err: %v", 1)
+
 		http.Error(w, "missing iss in URL query parameters", http.StatusUnauthorized)
 		return
 	}
 	if fhirURL != s.authorizedFHIRURL {
+		fmt.Printf(">>>>>>>>>>401 err: %v", 2)
+
 		http.Error(w, fmt.Sprintf("unauthorized iss %s", fhirURL), http.StatusUnauthorized)
 		return
 	}
 
 	launchID := getFirstParamOrEmpty(r, launchIDKey)
 	if launchID == "" {
+		fmt.Printf(">>>>>>>>>>401 err: %v", 3)
+
 		http.Error(w, "missing launch in URL query parameters", http.StatusUnauthorized)
 		return
 	}
@@ -135,22 +141,21 @@ func (s *Server) handleFHIRRedirect(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, requestQueryInvalidStateErr, http.StatusBadRequest)
 		return
 	}
-	token, err := s.sc.Exchange(ctx, fhirURL, code)
-	fmt.Printf(">>>>>>>>>>retrieve err %v\n", err)
+
+	fhirContext, err := s.sc.Exchange(ctx, fhirURL, code)
 	if err != nil {
 		http.Error(w, severFailedForFHIRTokenExchangeErr, http.StatusInternalServerError)
 		return
 	}
-	sess.FHIRToken = token
-	fmt.Printf(">>>>>token %v\n", token)
-	fmt.Printf(">>>>>sess %v\n", sess)
 
+	sess.FHIRContext = fhirContext
 	if err := s.sm.Save(sess); err != nil {
 		http.Error(w, serverSaveSessionErr, http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, "Successfully exchange for FHIR access token %s", token.AccessToken)
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, "Successfully authenticated with FHIR")
 	// TODO (Issue #24): Return FE contents.
 }
 

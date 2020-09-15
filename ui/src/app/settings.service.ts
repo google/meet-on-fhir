@@ -24,9 +24,4 @@ export class SettingsService {
       phone: '(123)123-1234',
     } as OrganizationInfo;
   }
-
-  get supportedLanguages(): string[] {
-    // TOOD: fetch these settings from the backend.
-    return ['Deutsch', 'English', 'Espanol', 'Francais'];
-  }
 }

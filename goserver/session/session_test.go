@@ -7,6 +7,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/meet-on-fhir/smartonfhir"
 )
 
 func TestSession(t *testing.T) {
@@ -20,7 +21,7 @@ func TestSession(t *testing.T) {
 		},
 		{
 			name:    "session with all fields",
-			session: &Session{ID: "session-id", FHIRURL: "fhir-url", ExpiresAt: time.Now(), FHIRToken: &oauth2.Token{AccessToken: "access-token", RefreshToken: "refresh-token", TokenType: "Bearer", Expiry: time.Now()}},
+			session: &Session{ID: "session-id", FHIRURL: "fhir-url", ExpiresAt: time.Now(), FHIRContext: &smartonfhir.FHIRContext{Token: &oauth2.Token{AccessToken: "access-token", RefreshToken: "refresh-token", TokenType: "Bearer", Expiry: time.Now()}, Scope: "scope", EncounterID: "e123", PatientID: "p123"}},
 		},
 	}
 

@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// SessionCookieName is the cookie name for session.
 const SessionCookieName = "session"
 
 // ErrNotFound is the error returned when something is not found.

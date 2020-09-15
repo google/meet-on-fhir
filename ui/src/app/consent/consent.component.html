@@ -1,0 +1,9 @@
+<mat-card>
+  <h3>{{languages.stringAssets.consentMessageTitle}}</h3>
+  <ng-container *ngFor="let paragraph of languages.stringAssets.consentMessageBodyTexts">
+    <p>{{paragraph}}</p>
+  </ng-container>
+  <div class="actions">
+    <button mat-raised-button color="primary">{{languages.stringAssets.consentButton}}</button>
+  </div>
+</mat-card>

@@ -23,11 +23,11 @@ func (s *Server) handleRedirect(w http.ResponseWriter, r *http.Request) {
     	// Return error to prevent CSRF attacks.
 	}
     sc := smartonfhir.NewConfig(*fhirClientID, *fhirURL, *fhirRedirectURL, fhirScopes)
-    token, err := s.sc.Exchange(ctx, code)
+    fhirContext, err := s.sc.Exchange(ctx, code)
     if err != nil {
         // Handle error
     }
-    // Store the token for future use.
+    // Store the fhirContext for future use.
 }
 */
 package smartonfhir
@@ -46,7 +46,18 @@ const (
 	smartConfigPath = "/.well-known/smart-configuration"
 	authURLKey      = "authorization_endpoint"
 	tokenURLKey     = "token_endpoint"
+	patientIDKey    = "patient"
+	encounterIDKey  = "encounter"
+	scopeKey        = "scope"
 )
+
+// FHIRContext represents Smart On FHIR context returned from FHIR auth server.
+type FHIRContext struct {
+	Token       *oauth2.Token `json:"token"`
+	EncounterID string        `json:"encounter_id"`
+	PatientID   string        `json:"patient_id"`
+	Scope       string        `json:"scopes"`
+}
 
 // Config contains configuration information for smartonfhir authentication flow.
 type Config struct {
@@ -75,14 +86,27 @@ func (c *Config) AuthCodeURL(fhirURL, launchID, state string) (string, error) {
 }
 
 // Exchange exchanges an authorization code for a token.
-// fhirURL is the URL of the FHIR server to fetch authentication config(a.k.a. smart configuration)
-func (c *Config) Exchange(ctx context.Context, fhirURL, code string) (*oauth2.Token, error) {
+func (c *Config) Exchange(ctx context.Context, fhirURL, code string) (*FHIRContext, error) {
 	config, err := c.authConfig(fhirURL)
 	if err != nil {
 		return nil, err
 	}
 
-	return config.Exchange(ctx, code, oauth2.SetAuthURLParam("client_id", c.fhirClientID))
+	tk, err := config.Exchange(ctx, code, oauth2.SetAuthURLParam("client_id", c.fhirClientID))
+	if err != nil {
+		return nil, err
+	}
+	fc := &FHIRContext{Token: tk}
+	if s, ok := tk.Extra(patientIDKey).(string); ok {
+		fc.PatientID = s
+	}
+	if s, ok := tk.Extra(encounterIDKey).(string); ok {
+		fc.EncounterID = s
+	}
+	if s, ok := tk.Extra(scopeKey).(string); ok {
+		fc.Scope = s
+	}
+	return fc, nil
 }
 
 // authConfig fetches the FHIR authentication configuration and returns an oauth2.Config based on

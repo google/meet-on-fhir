@@ -9,9 +9,10 @@ import {BrowserAnimationsModule} from '@angular/platform-browser/animations';
 import {AppRoutingModule} from './app-routing.module';
 import {AppComponent} from './app.component';
 import {LanguageSelectorComponent} from './language-selector/language-selector.component';
+import { ConsentComponent } from './consent/consent.component';
 
 @NgModule({
-  declarations: [AppComponent, LanguageSelectorComponent],
+  declarations: [AppComponent, LanguageSelectorComponent, ConsentComponent],
   imports: [
     AppRoutingModule,
     BrowserModule,
