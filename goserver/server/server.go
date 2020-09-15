@@ -66,22 +66,16 @@ func (s *Server) Run() error {
 func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 	fhirURL := getFirstParamOrEmpty(r, issKey)
 	if fhirURL == "" {
-		fmt.Printf(">>>>>>>>>>401 err: %v", 1)
-
 		http.Error(w, "missing iss in URL query parameters", http.StatusUnauthorized)
 		return
 	}
 	if fhirURL != s.authorizedFHIRURL {
-		fmt.Printf(">>>>>>>>>>401 err: %v", 2)
-
 		http.Error(w, fmt.Sprintf("unauthorized iss %s", fhirURL), http.StatusUnauthorized)
 		return
 	}
 
 	launchID := getFirstParamOrEmpty(r, launchIDKey)
 	if launchID == "" {
-		fmt.Printf(">>>>>>>>>>401 err: %v", 3)
-
 		http.Error(w, "missing launch in URL query parameters", http.StatusUnauthorized)
 		return
 	}
@@ -94,8 +88,6 @@ func (s *Server) handleLaunch(w http.ResponseWriter, r *http.Request) {
 
 	// use session ID as the state to prevent CSRF attacks
 	redirectURL, err := s.sc.AuthCodeURL(fhirURL, launchID, sess.ID)
-	fmt.Printf(">>>>err %v", err)
-
 	if err != nil {
 		http.Error(w, "cannot get FHIR authentication URL", http.StatusBadRequest)
 		return

@@ -78,7 +78,6 @@ func TestNewServerError(t *testing.T) {
 
 func TestLaunchHandlerError(t *testing.T) {
 	fhirURL := setupBackends()
-	s := defaultServer(fhirURL, sessiontest.NewMemoryStore())
 	tests := []struct {
 		name, queryParameters string
 		store                 session.Store
@@ -92,7 +91,7 @@ func TestLaunchHandlerError(t *testing.T) {
 		},
 		{
 			name:               "empty iss",
-			queryParameters:    "?iss=\"\"",
+			queryParameters:    "?iss=",
 			store:              nil,
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
@@ -109,8 +108,8 @@ func TestLaunchHandlerError(t *testing.T) {
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
 		{
-			name:               "empty iss",
-			queryParameters:    "?launch=\"\"&iss=" + fhirURL,
+			name:               "empty launch",
+			queryParameters:    "?launch=&iss=" + fhirURL,
 			store:              nil,
 			expectedHTTPStatus: http.StatusUnauthorized,
 		},
@@ -130,6 +129,7 @@ func TestLaunchHandlerError(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			s := defaultServer(fhirURL, test.store)
 			ts := httptest.NewServer(http.HandlerFunc(s.handleLaunch))
 			defer ts.Close()
 			res, err := http.Get(ts.URL + test.queryParameters)
