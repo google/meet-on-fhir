@@ -23,5 +23,4 @@ steps:
   # Run Go server unit tests
   - name: "golang"
     args: ['go', 'test', './...']
-    dir: "goserver"
-    
+    dir: "goserver
