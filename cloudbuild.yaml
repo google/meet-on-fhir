@@ -14,3 +14,13 @@ steps:
     entrypoint: "npm"
     args: ["run", "build", "--prod"]
     dir: "ui"
+  
+  # Build Go server module.
+  - name: golang
+    args: ['go', 'build', '.']
+    dir: "goserver"
+
+  # Run Go server unit tests
+  - name: "golang"
+    args: ['go', 'test', './...']
+    dir: "goserver"
