@@ -33,8 +33,6 @@ exports.set = (key, entity) => {
 	return datastore.insert({key: key, data: entity});
 };
 
-exports.update = (key, entity) => {
-	return datastore.update({key: key, data: entity}).then(() => {
-		return entity;
-	});
+exports.merge = (key, entity) => {
+	return datastore.merge({key: key, data: entity});
 };

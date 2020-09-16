@@ -48,12 +48,14 @@
                 if (userResourceType === 'patient') {
                   $("#consent-ack").on("click", () => {
                     showWaitingRoom();
-                    waitFor(client.encounter.id);
+                    reportArrived(client, true /* isPatient */, () => {
+                      waitFor(client.encounter.id);
+                    });
                     return;
                   });
                 } else {
                   showWaitingRoom();
-                  create(client.encounter.id);
+                  create(client);
                 }
               } else {
                 showError('#error-fihr-serve');
@@ -65,6 +67,26 @@
             showError('#error-smart-failed');
           });
       });
+
+      function reportArrived(client, isPatient, success) {
+        const fhirUrl = client.state.serverUrl;
+        const fhirAccessToken = client.state.tokenResponse.access_token;
+        const type = isPatient ? 'patient_arrived' : 'practitioner_arrived'
+        const encounterId = client.encounter.id;
+        const patientId = client.patient.id;
+        $.post(
+            '/reportEvent',
+            {
+                fhirUrl,
+                fhirAccessToken,
+                type,
+                encounterId,
+                patientId,
+            },
+            success).fail(function() {
+          showError('#error-unexpected');
+        });
+      }
 
       function waitFor(encounterId) {
         var timerId = window.setInterval(function() {
@@ -81,13 +103,16 @@
         }, 5000);
       }
 
-      function create(encounterId) {
-        $.post('/hangouts', { encounterId: encounterId }, (data, status) => {
-          if (data['url']) {
-            window.location.replace(data['url']);
-          }
-        }).fail(function() {
-          showError('#error-unexpected');
+      function create(client) {
+        const encounterId = client.encounter.id;
+        reportArrived(client, false /* isPatient */, ()=> {
+          $.post('/hangouts', { encounterId: encounterId }, (data, status) => {
+            if (data['url']) {
+              window.location.replace(data['url']);
+            }
+          }).fail(function() {
+            showError('#error-unexpected');
+          });
         });
       }
 

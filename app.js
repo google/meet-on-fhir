@@ -53,7 +53,7 @@ function debugLog(message) {
 app.get('/hangouts/:encounterId', (request, response) => {
 	const key = datastore.key(['Encounter', request.params.encounterId]);
 	datastore.get(key).then(entity => {
-		if (entity) {
+		if (entity && entity.Url) {
 			debugLog('Patient encounter ' + request.params.encounterId + ' found URL ' + entity.Url);
 			response.send({url: entity.Url});
 		} else {
@@ -66,7 +66,7 @@ app.post('/hangouts', (request, response) => {
 	const encounterId = request.body.encounterId;
 	const key = datastore.key(['Encounter', encounterId]);
 	datastore.get(key).then(entity => {
-		if (entity) {
+		if (entity && entity.Url) {
 			debugLog('Provider found existing encounter ' + request.body.encounterId + ' with URL ' + entity.Url);
 			response.send({url: entity.Url});
 			return;
@@ -80,10 +80,15 @@ app.post('/hangouts', (request, response) => {
 					return;
 				}
 				debugLog('Provider created calendar event for encounter ' + request.body.encounterId + ' with URL ' + url);
-				const entity = { Url: url };
-				datastore.set(key, entity).then(() => {
-					response.send({url: url});
-				});
+				if (entity) {
+				  datastore.merge(key, {Url: url}).then(() => {
+						response.send({url: url});
+					});
+				} else {
+					datastore.set(key, { Url: url }).then(() => {
+						response.send({url: url});
+					});
+				}
 			});
 		});
 	}).catch(error(response));
@@ -121,13 +126,12 @@ app.post('/reportEvent', async (request, response) => {
 	const patientId = request.body.patientId;
 	if (!patientId) {
 		response.status(400).send('missing patientId');
-		return
+		return;
 	}
 
-	const patientName = request.body.patientName;
-	if (!patientName) {
-		response.status(400).send('missing patientName');
-		return
+	if (!settings.enableEHRWriteback) {
+		response.status(200).send('EHR writeback is not needed or disabled.');
+		return;
 	}
 
 	try {
@@ -135,14 +139,16 @@ app.post('/reportEvent', async (request, response) => {
 	} catch (err) {
 		debugLog('fhir authentication check failed with err ' + err);
 		response.status(403).send('fhir authentication check failed');
-		return
+		return;
 	}
-	
-	const key = datastore.key(['Encounter', encounterId]);
-	datastore.get(key).then(entity => {
+
+	try {
+		const key = datastore.key(['Encounter', encounterId]);
+		let entity = await datastore.get(key);
+
 		if (!entity) {
-			response.status(400).send(`Meeting not found for encounter ${encounterId}`);
-			return;
+			entity = {};
+			await datastore.set(key, entity);
 		}
 
 		if (type == 'patient_arrived') {
@@ -151,33 +157,28 @@ app.post('/reportEvent', async (request, response) => {
 				return;
 			}
 			debugLog('Updating patient arrive time for encounter ' + request.body.encounterId);
-			entity.patientArriveTime = Date.now();
-		}
-		if (type == 'practitioner_arrived') {
+			await datastore.merge(key, {patientArriveTime: Date.now()});
+
+			debugLog('Sending patient arrived notification to EHR for encounter ' + request.body.encounterId);
+			//TODO: Send patient arrived message to EHR.
+		} else if (type == 'practitioner_arrived') {
 			if (entity.practitionerArriveTime) {
 				response.status(202).send(`practitioner has arrived before`);
 				return;
 			}
 			debugLog('Updating practitioner arrive time for encounter ' + request.body.encounterId);
-			entity.practitionerArriveTime = Date.now();
+			await datastore.merge(key, {practitionerArriveTime: Date.now()});
 		}
-		return datastore.update(key, entity);
-	}).then(entity => {
-		if (!entity || !settings.enableEHRWriteback) {
-			response.status(200).send('EHR writeback is not needed or disabled.');
-			return;
-		}
-		if (type == 'patient_arrived') {
-			debugLog('Sending patient arrived notification to EHR for encounter ' + request.body.encounterId);
-			//TODO: Send patient arrived message to EHR.
-		}
+
+		entity = await datastore.get(key);
 		if (entity.practitionerArriveTime && entity.patientArriveTime) {
 			debugLog('Sending appointment status change message to EHR for encounter ' + request.body.encounterId);
-			return mllp.setAppointmentStatusArrived(encounterId, patientId, patientName);
+			await mllp.setAppointmentStatusArrived(encounterId, patientId, patientName);
 		}
-	}).then(() => {
 		response.sendStatus(200);
-	}).catch(error(response));
+	}	catch(e) {
+		(error(response))(e);
+	}
 });
 
 app.get('/authenticate', (request, response) => {
